@@ -1,0 +1,5 @@
+.DS_Store
+/installers/
+/defeedback-linux/packages/
+*.iso
+/logs/

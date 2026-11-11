@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Use the same Wine loader and server for REAPER's yabridge hosts.
+set -euo pipefail
+wine_bin="$HOME/.local/opt/defeedback-wine-dcomp/runtime/bin"
+if [[ ! -x $wine_bin/wine || ! -x $wine_bin/wineserver ]]; then
+    printf 'Patched Wine is missing. Run setup-defeedback.sh first.\n' >&2
+    exit 1
+fi
+unset WINEPREFIX WINEARCH WINEDLLOVERRIDES
+export WINELOADER="$wine_bin/wine" WINESERVER="$wine_bin/wineserver"
+export PATH="$wine_bin:$PATH"
+exec "$HOME/.local/opt/REAPER/reaper" "$@"
