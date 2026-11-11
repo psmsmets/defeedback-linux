@@ -24,7 +24,19 @@ For missing archives, the script downloads REAPER 7.85 and checks its official S
 
 ## First audio test with Focusrite
 
-Connect the Scarlett and turn off **Direct Monitor**. Open REAPER from the applications menu or run `reaper`. Under **Options → Preferences → Audio → Device**, select **ALSA**, choose the Scarlett for input and output, set the sample rate to **48000 Hz** and the block size to **16 samples**, then click **Apply**. REAPER saves the selection for later launches. Check the active audio format in the top right of the REAPER window. If the device cannot open at 16 samples or you hear glitches, try 32, then 64. [REAPER User Guide](https://dlx.reaper.fm/userguide/html/)
+Connect the Scarlett and turn off **Direct Monitor**. Open REAPER from the applications menu or run `reaper`. Under **Options → Preferences → Audio → Device**, select **ALSA**, choose the Scarlett for input and output, then apply these settings.
+
+| ALSA setting | Value |
+| --- | --- |
+| Sample rate | 48000 Hz |
+| Block size | 64 samples |
+| Bit depth | 24-bit |
+| Periods | 3 |
+| RT priority | 50 |
+
+REAPER saves the selection for later launches. Check the active audio format in the top right of the REAPER window. If the device cannot open at 64 samples or you hear glitches, try 128 samples. [REAPER User Guide](https://dlx.reaper.fm/userguide/html/)
+
+On the Beelink and Scarlett, ALSA at **48 kHz and 64 samples** measured **8.1 ms round-trip latency**. Measurements were taken both with De-Feedback bypassed and with it active. The test used Open Sound Meter on an independent system, with pink noise among the test signals. Smaller blocks caused dropouts or audible clicks, and the PulseAudio backend produced no audio in this setup.
 
 Scan `~/.vst3` under **Plug-ins → VST**. Create one mono track with input monitoring enabled, check the Scarlett routing in bypass, and then add De-Feedback as an effect.
 
@@ -106,7 +118,7 @@ The checker lists the devices and PipeWire connections that Linux sees. For the 
 | `avantis` | Use a Dante card with AES67 enabled at 48 kHz. Patch the insert to unused card sockets and create separate AES67 multicast flows for the send and return. Verify PTP lock and both directions before enabling the insert. [Dante card setup](https://support.allen-heath.com/hc/en-gb/articles/40487771409937-M-DL-DANT64-M-DL-DANT128-Fitting-Note) · [Linux AES67 examples](https://github.com/bondagit/aes67-linux-daemon/blob/master/DEVICES.md) |
 | `dlive` | Use the same 48 kHz AES67 test with a compatible Dante card in a dLive I/O port. Verify the installed card revision, firmware, and PTP lock. Patch the send and return to unused card sockets on the dLive. [Dante card setup](https://support.allen-heath.com/hc/en-gb/articles/40487771409937-M-DL-DANT64-M-DL-DANT128-Fitting-Note) · [Audinate AES67 interoperability](https://support.getdante.com/hc/en-gb/articles/5508253040927-AES67-Interoperability) |
 
-For each profile, verify the physical return in bypass, then enable De-Feedback. Record the active rate and buffer, test duration, audible glitches, and measured insert latency. For PipeWire, test 128, 64, and 32 samples in that order. Reset the `ERR` display with `c` in `pw-top` at the start of each run and record any increase. For AES67 also record the PTP lock status and network buffer settings. Retest the chosen configuration after a cold boot. The profiles still need hardware validation. [PipeWire `pw-top`](https://docs.pipewire.org/page_man_pw-top_1.html)
+For each profile, verify the physical return in bypass, then enable De-Feedback. Measure a bypass baseline before testing with De-Feedback enabled. Noise suppression can attenuate a pink-noise test signal, leaving a smaller impulse-response peak in Open Sound Meter. Record the active rate and buffer, test duration, audible glitches, and measured insert latency. For PipeWire, test 128, 64, and 32 samples in that order. Reset the `ERR` display with `c` in `pw-top` at the start of each run and record any increase. For AES67 also record the PTP lock status and network buffer settings. Retest the chosen configuration after a cold boot. The profiles still need hardware validation. [PipeWire `pw-top`](https://docs.pipewire.org/page_man_pw-top_1.html)
 
 The installer and downloaded packages stay local. When setting up from a Git checkout, create `packages/` and place the [official Alpha Labs Windows installer](https://www.alphalabsaudio.com/defeedback/) in it.
 

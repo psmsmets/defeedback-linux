@@ -23,7 +23,7 @@ fi
 
 printf '%s\n' "$profile"
 if [[ ${1:-focusrite} == focusrite ]]; then
-    printf 'Select the Scarlett in REAPER with ALSA at 48 kHz and a block size of 16 samples.\n'
+    printf 'Select the Scarlett in REAPER with ALSA. Use 48000 Hz, 64 samples, 24-bit, 3 periods, and RT priority 50.\n'
 elif [[ $transport == usb ]]; then
     printf 'Select this USB interface for ALSA capture and playback in REAPER. Start at 48 kHz and 128 samples.\n'
 else

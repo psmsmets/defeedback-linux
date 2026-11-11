@@ -40,7 +40,7 @@ Run `bash check-audio.sh` from the setup bundle to check the default Focusrite U
 
 1. Connect the Scarlett directly via USB. Linux provides the USB audio driver. The official Focusrite Control software runs on Windows or macOS. [Focusrite on Linux](https://support.focusrite.com/hc/en-gb/articles/208530735-Is-my-Focusrite-Product-compatible-with-Linux)
 2. For manual setup, install [REAPER for Linux x86-64](https://www.reaper.fm/download.php) from the Cockos archive. Yabridge requires a native host installation outside Flatpak. [yabridge](https://github.com/robbert-vdh/yabridge#tested-with)
-3. In REAPER, choose **ALSA** under **Options → Preferences → Audio → Device**. Select the Scarlett for input and output, set **48000 Hz** and a block size of **16 samples**, then click **Apply**. Verify the active format in REAPER. [REAPER User Guide](https://dlx.reaper.fm/userguide/html/)
+3. In REAPER, choose **ALSA** under **Options → Preferences → Audio → Device**. Select the Scarlett for input and output, set **48 kHz, 64 samples, 24-bit, 3 periods, and RT priority 50**, then click **Apply**. Verify the active format in REAPER. [REAPER User Guide](https://dlx.reaper.fm/userguide/html/)
 4. Create one track, select the correct mono input, arm the track and enable input monitoring, then route the master to the desired Scarlett output. Turn off **Direct Monitor** on the Scarlett and check the signal before adding the plugin.
 
 ## Open the license window and create a REAPER profile
@@ -51,10 +51,11 @@ Use the [REAPER routing action](defeedback-linux/README.md#reaper-solo-duo-and-q
 
 ## Measure stability and latency
 
-- Test the Scarlett at **48 kHz and 16 samples** using ALSA. If the device cannot open or you hear glitches, try **32**, then **64** samples. Change only the block size between runs.
+- The Beelink and Scarlett setup measured **8.1 ms round-trip latency** with ALSA at **48 kHz and 64 samples**. Measurements were taken both with De-Feedback bypassed and with it active. The test used Open Sound Meter on an independent system, with pink noise among the test signals.
+- Use **64 samples** for this Scarlett setup. Smaller blocks caused dropouts or audible clicks. If you test another buffer size, change only that setting between runs.
 - For a PipeWire test, check `RATE` and `QUANT` on the active driver row in `pw-top`. Press `c` at the start of each run and monitor `ERR`. For direct ALSA, check the active format in REAPER and listen to or record the physical output. [PipeWire `pw-top`](https://docs.pipewire.org/devel/page_man_pw-top_1.html)
 - Run the lowest usable buffer for at least **30 minutes** with a speech recording as input. Record the physical Scarlett output if possible. The demo periodically interrupts the audio, so also test the same route with the plugin bypassed. [Alpha Labs FAQ](https://www.alphalabsaudio.com/defeedback/)
-- Measure the delay from physical input to output using the same setup as on Windows. For example, send an impulse to the Scarlett input and record the source signal and Scarlett output simultaneously on a second device. The time between the two impulses is the measured insert latency. Turn off Direct Monitor and measure with the plugin bypassed first.
+- Measure the delay from physical input to output using the same setup as on Windows. For example, send an impulse to the Scarlett input and record the source signal and Scarlett output simultaneously on a second device. The time between the two impulses is the measured insert latency. Turn off Direct Monitor and measure with the plugin bypassed first. Then repeat with De-Feedback enabled. Its noise suppression can attenuate the pink-noise test signal and reduce the amplitude of the derived impulse response, making the peak harder to identify.
 - Record the Scarlett generation, kernel (`uname -r`), patched Wine version (`~/.local/opt/defeedback-wine-dcomp/runtime/bin/wine --version`), yabridge build, REAPER version, sample rate, block size, test duration, and measured latency. For PipeWire, also record any increase in `ERR`. Retest the chosen setting after a cold boot.
 
 ## Optional network test with Avantis and AES67
@@ -69,9 +70,3 @@ For this test, the EW-DX sends audio via Dante to the Avantis channel. The Avant
 4. Test the full loop with one mono track in REAPER and the plugin bypassed. Enable De-Feedback and measure the round-trip latency. Record this separately from the Scarlett measurement because the network buffers are part of this loop.
 
 This route still needs to be tested on the Beelink. Record the Dante card revision and firmware, the network interface, and the PTP settings.
-
-## What to keep in Git
-
-Commit the documentation, setup scripts, and REAPER routing action. Include sanitized project templates and measurement results if useful. Check projects for saved plugin state and personal paths before sharing.
-
-Keep vendor downloads under the ignored `installers/` and `defeedback-linux/packages/` directories. Keep the Wine prefix, activation details, and offline bundles outside the repository. Link to the vendor downloads in the README so users can obtain packages under their own licenses.

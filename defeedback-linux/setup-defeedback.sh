@@ -310,7 +310,7 @@ install -Dm 644 -- "$bundle_dir/defeedback-routing.lua" "$app_dir/defeedback-rou
 
 printf '\nOpen REAPER from the desktop, applications menu, or run reaper in a new terminal.\n'
 printf '%s\n' 'For the Scarlett, select ALSA in Options > Preferences > Audio > Device.' \
-    'Select the Scarlett for input and output and set 48000 Hz and a block size of 16 samples.' \
+    'Select the Scarlett for input and output. Use 48000 Hz, 64 samples, 24-bit, 3 periods, and RT priority 50.' \
     'Scan ~/.vst3 and load defeedback-routing.lua in REAPER Actions to create a Solo, Duo, or Quad project.'
 
 if [[ $appliance == true ]]; then
