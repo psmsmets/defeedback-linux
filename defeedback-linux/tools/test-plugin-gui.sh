@@ -90,5 +90,5 @@ if [[ $mode == reaper ]]; then
 else
     bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
     printf 'In VSTHost, open the De-Feedback editor.\n'
-    WINEDEBUG="$wine_debug" bash "$bundle_dir/open-license-gui.sh" "$vsthost" > "$run_dir/host.log" 2>&1
+    WINEDEBUG="$wine_debug" bash "$bundle_dir/../src/open-license-gui.sh" "$vsthost" > "$run_dir/host.log" 2>&1
 fi

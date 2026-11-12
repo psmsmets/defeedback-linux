@@ -38,7 +38,7 @@ logs_root="${XDG_STATE_HOME:-$HOME/.local/state}/defeedback/wine-dcomp"
 
 if [[ $1 == build ]]; then
     bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-    exec bash "$bundle_dir/install-patched-wine.sh"
+    exec bash "$bundle_dir/../src/install-patched-wine.sh"
 fi
 
 mode=$1

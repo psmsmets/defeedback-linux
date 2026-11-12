@@ -40,10 +40,10 @@ fi
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 vsthost=${1:-"$HOME/.local/share/defeedback/vsthostx64/vsthost.exe"}
 if [[ $# -eq 0 && ! -f $vsthost ]]; then
-    vsthost="$bundle_dir/packages/vsthostx64/vsthost.exe"
+    vsthost="$bundle_dir/../packages/vsthostx64/vsthost.exe"
 fi
 if [[ $# -eq 0 && ! -f $vsthost ]]; then
-    vsthost="$bundle_dir/../installers/vsthostx64/vsthost.exe"
+    vsthost="$bundle_dir/../../installers/vsthostx64/vsthost.exe"
 fi
 [[ -f $vsthost ]] || fail 'Pass the path to the 64-bit vsthost.exe from the extracted vsthostx64 folder.'
 vsthost=$(realpath -- "$vsthost")

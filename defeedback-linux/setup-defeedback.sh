@@ -50,20 +50,23 @@ EOF
     install -Dm 755 -- "$entry" "$desktop_dir/defeedback-$id.desktop"
 }
 
-usage='Usage: bash setup-defeedback.sh [--appliance] [--import-vst3] [packages-directory]'
+usage='Usage: bash setup-defeedback.sh [--offline] [--appliance] [--import-vst3] [packages-directory]'
 import_vst3=false
 appliance=false
+offline=false
 while [[ ${1:-} == -* ]]; do
     case $1 in
         --help|-h)
             printf '%s\n' "$usage"
             printf '%s\n' 'By default, setup opens the official installer through Wine for a new plugin installation.' \
+                '--offline uses local resources and APT archives prepared for this Ubuntu release.' \
                 '--import-vst3 uses a Windows VST3 you already extracted with the official installer.' \
                 '--appliance configures automatic login, REAPER autostart, and dedicated workstation settings.'
             exit 0
             ;;
         --import-vst3) import_vst3=true ;;
         --appliance) appliance=true ;;
+        --offline) offline=true ;;
         *) fail "$usage" ;;
     esac
     shift
@@ -81,6 +84,7 @@ fi
 # Resolve the bundled packages relative to this script, regardless of where it was started.
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 package_dir=$(cd -- "${1:-$bundle_dir/packages}" && pwd) || fail 'The package directory does not exist.'
+source "$bundle_dir/src/apt-packages.sh"
 # A custom archive directory can still use the bundled Windows installer.
 plugin_installer="$package_dir/DefeedbackSetup.exe"
 [[ -f $plugin_installer ]] || plugin_installer="$bundle_dir/packages/DefeedbackSetup.exe"
@@ -110,7 +114,7 @@ trap cleanup EXIT
 
 printf '\n== Ubuntu packages ==\n'
 # PipeWire supplies the JACK interface for AES67.
-sudo apt-get install -y ca-certificates curl xz-utils unzip pipewire-jack alsa-utils xdg-user-dirs
+install_apt_group runtime "$package_dir" "$offline"
 
 desktop_dir=$(xdg-user-dir DESKTOP 2>/dev/null || true)
 if [[ $desktop_dir != /* || $desktop_dir == "$HOME" ]]; then
@@ -118,7 +122,7 @@ if [[ $desktop_dir != /* || $desktop_dir == "$HOME" ]]; then
 fi
 
 printf '\n== Patched Wine ==\n'
-bash "$bundle_dir/install-patched-wine.sh" 9>&-
+bash "$bundle_dir/src/install-patched-wine.sh" "$package_dir" "$offline" 9>&-
 # Keep the system Wine available outside this setup and the installed launchers.
 unset WINEARCH WINEPREFIX WINEDLLOVERRIDES
 export WINELOADER="$wine" WINESERVER="$wine_bin/wineserver"
@@ -133,14 +137,17 @@ if [[ ! -x $reaper_dir/reaper ]]; then
     reaper_archives=("$package_dir"/reaper*_linux_x86_64.tar.xz)
     shopt -u nullglob
     [[ ${#reaper_archives[@]} -le 1 ]] || fail 'Keep one REAPER x86-64 archive in the package directory.'
-    reaper_file=reaper785_linux_x86_64.tar.xz
+    IFS='|' read -r _ _ reaper_file _ reaper_checksum < <(
+        awk -F'|' '$1 == "reaper" && $2 == "file" { print; exit }' "$bundle_dir/config/resources.conf"
+    )
     reaper_archive=${reaper_archives[0]:-"$work_dir/$reaper_file"}
     if [[ ! -f $reaper_archive ]]; then
-        curl -fLsS --retry 3 -o "$reaper_archive" "https://www.reaper.fm/files/7.x/$reaper_file"
+        [[ $offline == false ]] || fail 'Missing the local REAPER archive.'
+        bash "$bundle_dir/download-resources.sh" --only reaper --output "$work_dir"
     fi
     # This checksum covers the pinned release, including a local copy with the same name.
-    if [[ ${reaper_archive##*/} == "$reaper_file" ]]; then
-        printf '%s  %s\n' b962c40a51535d2faf9796f56270f9e331c9d424b5741472277d7bfd6c4893ac "$reaper_archive" | sha256sum --check
+    if [[ ${reaper_archive##*/} == "$reaper_file" && $reaper_checksum != - ]]; then
+        printf '%s  %s\n' "$reaper_checksum" "$reaper_archive" | sha256sum --check
     fi
     tar -xJf "$reaper_archive" -C "$work_dir"
     [[ -x $work_dir/reaper_linux_x86_64/REAPER/reaper ]] || fail 'The REAPER archive has an unexpected layout.'
@@ -182,18 +189,21 @@ if [[ ! -x $yabridge_dir/yabridgectl ]]; then
         [[ ${#bridge_archives[@]} -le 1 && ${#ctl_archives[@]} -le 1 ]] || fail 'Keep one yabridge build and its matching yabridgectl archive in the package directory.'
         if [[ ${#bridge_archives[@]} -eq 0 ]]; then
             [[ ${#ctl_archives[@]} -eq 0 ]] || fail 'Add the yabridge archive that matches your local yabridgectl.'
-            # GitHub Actions publishes the bridge and its CLI as separate artifacts.
-            # Use the bridge artifact's build suffix to select the matching CLI.
-            nightly_url=https://nightly.link/robbert-vdh/yabridge/workflows/build/master
-            curl -fLsS --retry 3 "$nightly_url" -o "$work_dir/nightly.html"
-            bridge_name=$(sed -nE 's/.*href="[^"]*\/(yabridge-[[:alnum:].-]+\.tar\.gz\.zip)".*/\1/p' "$work_dir/nightly.html" | sort -u)
-            [[ $bridge_name =~ ^yabridge-[[:alnum:].-]+\.tar\.gz\.zip$ ]] || fail 'Could not identify a single yabridge build. Put both build archives in the package directory.'
-            ctl_name="yabridgectl-${bridge_name#yabridge-}"
-            for artifact in "$bridge_name" "$ctl_name"; do
-                curl -fLsS --retry 3 -o "$work_dir/$artifact" "$nightly_url/$artifact"
-            done
-            bridge_archives=("$work_dir/$bridge_name")
-            ctl_archives=("$work_dir/$ctl_name")
+            [[ $offline == false ]] || fail 'Missing the local yabridge package.'
+            bash "$bundle_dir/download-resources.sh" --only yabridge --output "$work_dir"
+            shopt -s nullglob
+            bridge_archives=("$work_dir"/yabridge-*.tar.gz "$work_dir"/yabridge-*.tar.gz.zip)
+            ctl_archives=("$work_dir"/yabridgectl-*.tar.gz "$work_dir"/yabridgectl-*.tar.gz.zip)
+            shopt -u nullglob
+        fi
+        [[ ${#bridge_archives[@]} -eq 1 && ${#ctl_archives[@]} -le 1 ]] ||
+            fail 'Expected one yabridge archive and at most one matching yabridgectl archive.'
+        if [[ ${#ctl_archives[@]} -eq 1 ]]; then
+            bridge_name=${bridge_archives[0]##*/}
+            ctl_name=${ctl_archives[0]##*/}
+            bridge_name=${bridge_name%.zip}
+            [[ ${ctl_name%.zip} == "yabridgectl-${bridge_name#yabridge-}" ]] ||
+                fail 'The yabridge and yabridgectl archives must come from the same build.'
         fi
         for archive in "${bridge_archives[@]}" "${ctl_archives[@]}"; do
             # The GitHub Actions ZIP contains a tarball. Local tarballs can be unpacked directly.
@@ -217,7 +227,12 @@ link_command "$yabridge_dir/yabridgectl"
 printf '\n== Installing and registering De-Feedback ==\n'
 # Use a dedicated Wine prefix (Windows environment) for the plugin. Close the
 # lock descriptor in Wine commands so background processes cannot retain it.
-WINEPREFIX="$prefix" "$wine" wineboot -u 9>&-
+if [[ $offline == true ]]; then
+    # Skip the Wine Mono and Gecko bootstrap downloads in an offline install.
+    WINEDLLOVERRIDES='mscoree,mshtml=' WINEPREFIX="$prefix" "$wine" wineboot -u 9>&-
+else
+    WINEPREFIX="$prefix" "$wine" wineboot -u 9>&-
+fi
 # A VST3 can be a directory bundle. Match its outer path and skip its contents.
 mapfile -d '' -t plugins < <(find "$prefix/drive_c" -iname 'defeedback.vst3' -print0 -prune)
 if [[ ${#plugins[@]} -eq 0 ]]; then
@@ -282,7 +297,7 @@ for host in "$yabridge_dir"/yabridge-host*.exe; do
 done
 
 printf '\n== Launchers and REAPER profiles ==\n'
-install -Dm 755 -- "$bundle_dir/reaper" "$app_dir/bin/reaper"
+install -Dm 755 -- "$bundle_dir/src/reaper" "$app_dir/bin/reaper"
 link_command "$app_dir/bin/reaper" "$reaper_dir/reaper"
 install_launcher reaper REAPER "$app_dir/bin/reaper" 'Digital audio workstation'
 
@@ -298,7 +313,7 @@ if [[ ! -f $vsthost_dir/vsthost.exe ]]; then
     done
 fi
 if [[ -f $vsthost_dir/vsthost.exe ]]; then
-    install -Dm 755 -- "$bundle_dir/open-license-gui.sh" "$app_dir/bin/vsthost"
+    install -Dm 755 -- "$bundle_dir/src/open-license-gui.sh" "$app_dir/bin/vsthost"
     link_command "$app_dir/bin/vsthost"
     install_launcher vsthost 'VSTHost (De-Feedback License)' "$app_dir/bin/vsthost" 'Open De-Feedback in VSTHost without audio'
 else
@@ -306,7 +321,7 @@ else
 fi
 
 # REAPER loads ReaScripts from its Actions window. Preserve its existing device preferences.
-install -Dm 644 -- "$bundle_dir/defeedback-routing.lua" "$app_dir/defeedback-routing.lua"
+install -Dm 644 -- "$bundle_dir/src/defeedback-routing.lua" "$app_dir/defeedback-routing.lua"
 
 printf '\nOpen REAPER from the desktop, applications menu, or run reaper in a new terminal.\n'
 printf '%s\n' 'For the Scarlett, select ALSA in Options > Preferences > Audio > Device.' \
@@ -314,7 +329,7 @@ printf '%s\n' 'For the Scarlett, select ALSA in Options > Preferences > Audio > 
     'Scan ~/.vst3 and load defeedback-routing.lua in REAPER Actions to create a Solo, Duo, or Quad project.'
 
 if [[ $appliance == true ]]; then
-    bash "$bundle_dir/setup-appliance.sh"
+    bash "$bundle_dir/tools/setup-appliance.sh"
 else
     # Migrate the old managed service even when only reinstalling the application.
     unit="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/defeedback-reaper.service"

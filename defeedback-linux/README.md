@@ -1,6 +1,6 @@
 # Install De-Feedback on Ubuntu Studio
 
-Copy the entire `defeedback-linux` folder to the Beelink. In the Ubuntu Studio desktop session, open a terminal in that folder and run the script as your regular user.
+Use [the installation reference](docs/installation.md) for the download manifest, offline preparation, and the list of changes setup makes.\n\nCopy the entire `defeedback-linux` folder to the Beelink. In the Ubuntu Studio desktop session, open a terminal in that folder and run the script as your regular user.
 
 ```bash
 bash setup-defeedback.sh
@@ -20,7 +20,7 @@ Put the official `DefeedbackSetup.exe` in `packages/`. On a new installation, se
 | VSTHost x64 with all companion files | `vsthostx64/` |
 | Extracted yabridge | `yabridge/` containing `yabridgectl` and the bridge files |
 
-For missing archives, the script downloads REAPER 7.85 and checks its official SHA-256 checksum. It fetches the current yabridge development build via the project's nightly.link page. APT may also need internet access. Use a development build of yabridge with the patched Wine runtime. [REAPER](https://www.reaper.fm/download.php?hashes=1) · [yabridge](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues)
+For missing archives, the script downloads the REAPER version in the resource manifest and checks its published SHA-256. It fetches the current yabridge development build via the project's nightly.link page. APT may also need internet access. Use a development build of yabridge with the patched Wine runtime. [REAPER](https://www.reaper.fm/download.php?hashes=1) · [yabridge](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues)
 
 ## First audio test with Focusrite
 
@@ -42,7 +42,7 @@ Scan `~/.vst3` under **Plug-ins → VST**. Create one mono track with input moni
 
 ## Dedicated workstation startup
 
-Run `bash setup-defeedback.sh --appliance` from the Ubuntu Studio Plasma desktop to install De-Feedback and configure startup. If REAPER is already installed, you can run `bash setup-appliance.sh` on its own. Use the account that should log in automatically. Anyone with physical access can use this desktop after boot.
+Run `bash setup-defeedback.sh --appliance` from the Ubuntu Studio Plasma desktop to install De-Feedback and configure startup. If REAPER is already installed, you can run `bash tools/setup-appliance.sh` on its own. Use the account that should log in automatically. Anyone with physical access can use this desktop after boot.
 
 SDDM signs in to the current Plasma session type at boot. The systemd user service waits three seconds and then starts REAPER with its saved preferences. If you want it to reopen a specific De-Feedback project, set that in REAPER before rebooting.
 
@@ -74,7 +74,7 @@ If extraction under Wine fails, run the official installer on Windows, review th
 
 ## License management in VSTHost
 
-Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. The supplied package terms limit VSTHost to private use. The `vsthost` command and desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**. This is the permanent prefix; the `test-patched-wine.sh patched` command uses a temporary test prefix.
+Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. The supplied package terms limit VSTHost to private use. The `vsthost` command and desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**. This is the permanent prefix; the `tools/test-patched-wine.sh patched` command uses a temporary test prefix.
 
 ## REAPER Solo, Duo, and Quad
 
@@ -100,12 +100,12 @@ The path above is repeated once for Solo, twice for Duo, and four times for Quad
 **Focusrite Scarlett over USB is the default and the first test.** The Scarlett is an audio interface for this profile. The SQ and CQ supply their own USB audio, while the Avantis and dLive profiles use an AES67 endpoint on Linux.
 
 ```bash
-bash check-audio.sh
-bash check-audio.sh focusrite --launch
-bash check-audio.sh sq
-bash check-audio.sh cq
-bash check-audio.sh avantis
-bash check-audio.sh dlive
+bash tools/check-audio.sh
+bash tools/check-audio.sh focusrite --launch
+bash tools/check-audio.sh sq
+bash tools/check-audio.sh cq
+bash tools/check-audio.sh avantis
+bash tools/check-audio.sh dlive
 ```
 
 The checker lists the devices and PipeWire connections that Linux sees. For the USB profiles, select the appropriate capture and playback device in REAPER with ALSA. Start with 48 kHz and 128 samples on SQ/CQ, then lower the buffer after verifying the four paths. The USB launches use REAPER's saved audio preferences. For AES67, `--launch` starts REAPER with PipeWire-JACK at 48 kHz and 128 samples. Select JACK in REAPER after the AES67 capture and playback ports appear. If using an ALSA RAVENNA device directly, select it in REAPER's ALSA settings.
@@ -129,33 +129,14 @@ Run this on the Beelink's Ubuntu Studio desktop after the Focusrite test. The [P
 ```bash
 sudo apt install iproute2 ethtool linuxptp pipewire pipewire-bin
 ip -br -4 addr
-bash setup-aes67.sh enp2s0 239.69.150.244
+bash tools/setup-aes67.sh enp2s0 239.69.150.244
 ```
 
 Replace `enp2s0` with the wired interface connected to the Dante Primary network. Choose a free return multicast address in `239.69.0.0/16` that matches the Dante card's configured AES67 receive prefix. The address must differ from the Avantis send group. The example assumes PTPv2 domain 0 and UDP IPv4 with E2E delay measurement. The script checks for IPv4, hardware TX/RX timestamping, and a PTP device readable by your user. A VM's virtual NIC may lack that hardware clock.
 
 1. In Dante Controller, enable AES67 on the Avantis or dLive Dante card at **48 kHz** and create one AES67 multicast send using an unused output. Keep the insert bypassed while setting up the loop.
 2. Run the commands printed by the script. Start the foreground [`ptp4l` client](https://www.linuxptp.org/documentation/ptp4l/) only if no other PTP instance is managing that interface. Confirm that the port is in `SLAVE` state and tracking the expected grandmaster before starting the PipeWire helper. The helper runs in your desktop session and exports nodes to the existing PipeWire graph.
-3. Run `bash check-audio.sh avantis --launch` (or `dlive --launch`). In REAPER, select JACK and use the console's advertised AES67 source and the `defeedback-aes67-return` sink. Use the first channel of the two-channel return for the mono test. In Dante Controller, subscribe an unused Dante receive channel to channel 1 of **De-Feedback Return** and patch it to the console's insert return.
+3. Run `bash tools/check-audio.sh avantis --launch` (or `dlive --launch`). In REAPER, select JACK and use the console's advertised AES67 source and the `defeedback-aes67-return` sink. Use the first channel of the two-channel return for the mono test. In Dante Controller, subscribe an unused Dante receive channel to channel 1 of **De-Feedback Return** and patch it to the console's insert return.
 4. Verify the send and return with De-Feedback bypassed. Start at **48 kHz / 128 samples**, then measure round-trip latency and watch `pw-top` for errors before testing smaller buffers.
 
-Stop the PipeWire helper and then the PTP client with Ctrl+C in their terminals to end the test. The script only writes `pipewire-aes67.conf` in `${XDG_CONFIG_HOME:-$HOME/.config}/defeedback/`; it does not change the regular audio service or enable autostart. The Avantis and dLive routes still need validation on hardware.
-
-## Planned download and offline install workflow
-
-The current setup prefers local application packages. It still uses APT and fetches Wine source when no completed build exists. Copying this folder and the application archives to a USB stick is therefore not a complete offline install for a clean target.
-
-The next step is a separate preparation command on an online machine. It should accept versioned download URLs for the repository and packages, fetch them with `curl`, and verify the available checksums. The online path can then pass the same package directory straight to setup. Downloads that require an account or acceptance of terms should be added manually using the vendor's own installer or archive.
-
-```mermaid
-flowchart LR
-    Repo["Repository archive URL"] --> Prepare["Prepare on an online machine"]
-    URLs["Versioned package URLs and checksums"] --> Prepare
-    Local["Vendor packages supplied by user"] --> Prepare
-    Prepare --> Bundle["Verified bundle for Ubuntu Studio amd64"]
-    Bundle --> Online["Install on connected device"]
-    Bundle --> USB["Transfer by USB"]
-    USB --> Offline["Install on disconnected device"]
-```
-
-For a disconnected target, the bundle needs the setup files, REAPER, matching yabridge artifacts, and any vendor packages to install. It also needs the required Ubuntu packages with their dependencies for the target Ubuntu release and `amd64` architecture. For Wine, package a tested compatible runtime for that target, or include the pinned source and all build dependencies. Check the install on a clean target with networking disabled. Keep license activation separate from the offline install.
+Stop the PipeWire helper and then the PTP client with Ctrl+C in their terminals to end the test. The script only writes `pipewire-aes67.conf` in `${XDG_CONFIG_HOME:-$HOME/.config}/defeedback/`; it does not change the regular audio service or enable autostart. The Avantis and dLive routes still need validation on hardware.\n

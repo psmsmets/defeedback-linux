@@ -34,9 +34,9 @@ sudo apt install ubuntustudio-installer
 
 ## Test the Scarlett and REAPER
 
-Copy the entire [setup bundle](defeedback-linux/) to the Beelink, including the local packages you plan to use. From that directory, run `bash setup-defeedback.sh`. Setup reuses an existing patched Wine build or compiles it, then registers De-Feedback with yabridge. The [setup guide](defeedback-linux/README.md) lists the prerequisites and the initial audio test. It also outlines the [planned offline workflow](defeedback-linux/README.md#planned-download-and-offline-install-workflow).
+Copy the entire [setup bundle](defeedback-linux/) to the Beelink, including the local packages you plan to use. From that directory, run `bash setup-defeedback.sh`. Setup reuses an existing patched Wine build or compiles it, then registers De-Feedback with yabridge. The [setup guide](defeedback-linux/README.md) lists the prerequisites and the initial audio test. It also outlines the [resource download and offline installation](defeedback-linux/docs/installation.md).
 
-Run `bash check-audio.sh` from the setup bundle to check the default Focusrite USB profile. The [audio profiles](defeedback-linux/README.md#audio-profiles) also cover SQ and CQ over USB, and Avantis and dLive over AES67.
+Run `bash tools/check-audio.sh` from the setup bundle to check the default Focusrite USB profile. The [audio profiles](defeedback-linux/README.md#audio-profiles) also cover SQ and CQ over USB, and Avantis and dLive over AES67.
 
 1. Connect the Scarlett directly via USB. Linux provides the USB audio driver. The official Focusrite Control software runs on Windows or macOS. [Focusrite on Linux](https://support.focusrite.com/hc/en-gb/articles/208530735-Is-my-Focusrite-Product-compatible-with-Linux)
 2. For manual setup, install [REAPER for Linux x86-64](https://www.reaper.fm/download.php) from the Cockos archive. Yabridge requires a native host installation outside Flatpak. [yabridge](https://github.com/robbert-vdh/yabridge#tested-with)
