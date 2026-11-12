@@ -1,16 +1,18 @@
 # Install De-Feedback on Ubuntu Studio
 
-Use [the installation reference](docs/installation.md) for the download manifest, offline preparation, and the list of changes setup makes.\n\nCopy the entire `defeedback-linux` folder to the Beelink. In the Ubuntu Studio desktop session, open a terminal in that folder and run the script as your regular user.
+Use [the installation reference](docs/installation.md) for the download manifest, offline preparation, and the list of changes setup makes.
+
+Copy the entire `defeedback-linux` folder to the target computer. In the Ubuntu Studio desktop session, open a terminal in that folder and run the script as your regular user.
 
 ```bash
 bash setup-defeedback.sh
 ```
 
-The script uses `sudo` for Ubuntu packages and installs REAPER, yabridge, and patched Wine in your home directory. It reuses a completed build from the patched VSTHost test. On a fresh machine it compiles the Direct2D/DirectComposition Wine fork from source, which can take a while on the N100. The runtime lives at `~/.local/opt/defeedback-wine-dcomp/runtime`. [Wine fork and build notes](https://github.com/giang17/wine/blob/d2d1-dcomp-11.0/PATCHES.md)
+The script uses `sudo` for Ubuntu packages and installs REAPER, yabridge, and patched Wine in your home directory. It reuses a completed build from the patched VSTHost test. On a fresh machine it compiles the Direct2D/DirectComposition Wine fork from source, which can take a while on the target computer. The runtime lives at `~/.local/opt/defeedback-wine-dcomp/runtime`. [Wine fork and build notes](https://github.com/giang17/wine/blob/d2d1-dcomp-11.0/PATCHES.md)
 
 Close REAPER and VSTHost before updating an existing installation. Setup updates the permanent `~/.wine-defeedback` prefix in place and reuses its installed VST3. Use the installed REAPER launcher so yabridge gets the patched Wine loader and server. Both applications get desktop and applications-menu entries. The `reaper`, `vsthost`, and `yabridgectl` commands are linked into `~/.local/bin`. Open a new Konsole tab, or run `export PATH="$HOME/.local/bin:$PATH"` for the current terminal. [yabridge Wine configuration](https://github.com/robbert-vdh/yabridge#configuration)
 
-Put the official `DefeedbackSetup.exe` in `packages/`. On a new installation, setup opens it through Wine so each user can review and accept the Alpha Labs terms in the installer. Add your Linux packages to the same directory or supply their directory with `bash setup-defeedback.sh '/path/to/packages'`.
+Download the Windows installer and optional VSTHost x64 archive manually from Alpha Labs. Complete the three acknowledgements on the website, then put `DefeedbackSetup.exe` in `packages/` and extract VSTHost to `packages/vsthostx64/` if you need it. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/) On a new installation, setup opens it through Wine so each user can review and accept the Alpha Labs terms in the installer. Add your Linux packages to the same directory or supply their directory with `bash setup-defeedback.sh '/path/to/packages'`.
 
 | Package | File name or directory |
 | --- | --- |
@@ -36,7 +38,7 @@ Connect the Scarlett and turn off **Direct Monitor**. Open REAPER from the appli
 
 REAPER saves the selection for later launches. Check the active audio format in the top right of the REAPER window. If the device cannot open at 64 samples or you hear glitches, try 128 samples. [REAPER User Guide](https://dlx.reaper.fm/userguide/html/)
 
-On the Beelink and Scarlett, ALSA at **48 kHz and 64 samples** measured **8.1 ms round-trip latency**. Measurements were taken both with De-Feedback bypassed and with it active. The test used Open Sound Meter on an independent system, with pink noise among the test signals. Smaller blocks caused dropouts or audible clicks, and the PulseAudio backend produced no audio in this setup.
+On the reference system with a Scarlett, ALSA at **48 kHz and 64 samples** measured **8.1 ms round-trip latency**. Measurements were taken both with De-Feedback bypassed and with it active. The test used Open Sound Meter on an independent system, with pink noise among the test signals. Smaller blocks caused dropouts or audible clicks, and the PulseAudio backend produced no audio in this setup.
 
 Scan `~/.vst3` under **Plug-ins → VST**. Create one mono track with input monitoring enabled, check the Scarlett routing in bypass, and then add De-Feedback as an effect.
 
@@ -124,7 +126,7 @@ The installer and downloaded packages stay local. When setting up from a Git che
 
 ## Optional AES67 test with PipeWire
 
-Run this on the Beelink's Ubuntu Studio desktop after the Focusrite test. The [PipeWire AES67 profile](https://github.com/PipeWire/pipewire/blob/1.6.2/src/daemon/pipewire-aes67.conf.in) uses PTPv2 to sync the Ethernet hardware clock and SAP to discover and announce AES67 streams. Inferno implements native Dante; it does not transmit or receive AES67 audio. [Inferno protocol support](https://github.com/teodly/inferno#comparison-with-other-aoip-virtual-soundcards)
+Run this from the Ubuntu Studio desktop after the Focusrite test. The [PipeWire AES67 profile](https://github.com/PipeWire/pipewire/blob/1.6.2/src/daemon/pipewire-aes67.conf.in) uses PTPv2 to sync the Ethernet hardware clock and SAP to discover and announce AES67 streams. Inferno implements native Dante; it does not transmit or receive AES67 audio. [Inferno protocol support](https://github.com/teodly/inferno#comparison-with-other-aoip-virtual-soundcards)
 
 ```bash
 sudo apt install iproute2 ethtool linuxptp pipewire pipewire-bin

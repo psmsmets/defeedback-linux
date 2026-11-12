@@ -73,7 +73,7 @@ while [[ ${1:-} == -* ]]; do
 done
 [[ $# -le 1 ]] || fail "$usage"
 # The Windows installer opens a GUI, and the tools and plugin belong to the desktop user.
-[[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'Run this script on the Ubuntu Studio Beelink (Linux x86-64).'
+[[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'Run this script on Ubuntu Studio (Linux x86-64).'
 [[ $EUID -ne 0 ]] || fail 'Run as your regular user. The script uses sudo for APT.'
 [[ -n ${DISPLAY:-}${WAYLAND_DISPLAY:-} ]] || fail 'Open a terminal in the Ubuntu Studio desktop session.'
 command -v apt-get >/dev/null || fail 'This script requires APT on Ubuntu Studio.'

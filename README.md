@@ -1,8 +1,8 @@
 # Alpha Labs De-Feedback on Linux
 
-Run the Windows De-Feedback VST3 on a Beelink Intel N100 with native Linux REAPER, yabridge, and a Wine build with Direct2D and DirectComposition patches. Start with a Focusrite Scarlett over USB at 48 kHz. The setup also includes REAPER routing for one, two, or four independent mono paths.
+Run the Windows De-Feedback VST3 with native Linux REAPER, yabridge, and a Wine build with Direct2D and DirectComposition patches. Start with a Focusrite Scarlett over USB at 48 kHz. The setup also includes REAPER routing for one, two, or four independent mono paths.
 
-The De-Feedback editor and license window worked in VSTHost with patched Wine on both Xfce/Xorg and Plasma/Wayland. The permanent REAPER launcher and four physical SQ/CQ USB paths still need an end-to-end test on the Beelink. AES67 is a separate hardware test.
+The De-Feedback editor and license window worked in VSTHost with patched Wine on both Xfce/Xorg and Plasma/Wayland. The permanent REAPER launcher and four physical SQ/CQ USB paths still need end-to-end validation. AES67 is a separate hardware test.
 
 ```mermaid
 flowchart LR
@@ -14,12 +14,16 @@ flowchart LR
     Prefix --> VST["Windows De-Feedback VST3"]
 ```
 
+## Test hardware
+
+The reference system is a **Beelink EQ12** with a 12th Gen Intel Alder Lake-N100 processor (4 cores, 4 threads, up to 3.40 GHz), 16 GB DDR5 RAM, a 500 GB SSD, and two 2.5 GbE ports.
+
 ## Create a bootable USB drive
 
-1. Download the [Ubuntu Studio 26.04.1 LTS desktop ISO for amd64](https://cdimage.ubuntu.com/ubuntustudio/releases/resolute/release/ubuntustudio-26.04.1-desktop-amd64.iso). Choose `amd64` for the Intel N100. The checksum is listed with the [official ISO files](https://cdimage.ubuntu.com/ubuntustudio/releases/resolute/release/).
-2. Download [balenaEtcher](https://etcher.balena.io/) for the computer you will use to write the USB drive. On an Apple Silicon Mac, choose the Apple Silicon version of Etcher. Use the `amd64` ISO because the Beelink will boot from it.
+1. Download the [Ubuntu Studio 26.04.1 LTS desktop ISO for amd64](https://cdimage.ubuntu.com/ubuntustudio/releases/resolute/release/ubuntustudio-26.04.1-desktop-amd64.iso). The checksum is listed with the [official ISO files](https://cdimage.ubuntu.com/ubuntustudio/releases/resolute/release/).
+2. Download [balenaEtcher](https://etcher.balena.io/) for the computer you will use to write the USB drive. On an Apple Silicon Mac, choose the Apple Silicon version of Etcher. Use the `amd64` ISO for the x86-64 target.
 3. Use a USB drive with at least 8 GB of capacity. In Etcher, choose **Flash from file**, select the ISO, choose the USB drive under **Select target**, and click **Flash**. Etcher overwrites the contents of the selected drive.
-4. Start the Beelink from the USB drive using the UEFI boot menu. You can check whether the Scarlett is detected in the live session. If practical, temporarily disconnect the Windows NVMe drive before installing so the Linux bootloader goes on the test SSD. Choose **Minimal installation** on the test SSD. Reconnect the NVMe drive and use the UEFI boot menu to choose which drive to start from.
+4. Start the target computer from the USB drive using the UEFI boot menu. You can check whether the Scarlett is detected in the live session. If practical, temporarily disconnect the Windows NVMe drive before installing so the Linux bootloader goes on the test SSD. Choose **Minimal installation** on the test SSD. Reconnect the NVMe drive and use the UEFI boot menu to choose which drive to start from.
 
 ## Ubuntu Studio or Ubuntu Desktop
 
@@ -34,7 +38,7 @@ sudo apt install ubuntustudio-installer
 
 ## Test the Scarlett and REAPER
 
-Copy the entire [setup bundle](defeedback-linux/) to the Beelink, including the local packages you plan to use. From that directory, run `bash setup-defeedback.sh`. Setup reuses an existing patched Wine build or compiles it, then registers De-Feedback with yabridge. The [setup guide](defeedback-linux/README.md) lists the prerequisites and the initial audio test. It also outlines the [resource download and offline installation](defeedback-linux/docs/installation.md).
+Copy the entire [setup bundle](defeedback-linux/) to the target computer, including the local packages you plan to use. From that directory, run `bash setup-defeedback.sh`. Setup reuses an existing patched Wine build or compiles it, then registers De-Feedback with yabridge. The [setup guide](defeedback-linux/README.md) lists the prerequisites and the initial audio test. It also outlines the [resource download and offline installation](defeedback-linux/docs/installation.md).
 
 Run `bash tools/check-audio.sh` from the setup bundle to check the default Focusrite USB profile. The [audio profiles](defeedback-linux/README.md#audio-profiles) also cover SQ and CQ over USB, and Avantis and dLive over AES67.
 
@@ -51,7 +55,7 @@ Use the [REAPER routing action](defeedback-linux/README.md#reaper-solo-duo-and-q
 
 ## Measure stability and latency
 
-- The Beelink and Scarlett setup measured **8.1 ms round-trip latency** with ALSA at **48 kHz and 64 samples**. Measurements were taken both with De-Feedback bypassed and with it active. The test used Open Sound Meter on an independent system, with pink noise among the test signals.
+- The reference system with a Scarlett measured **8.1 ms round-trip latency** with ALSA at **48 kHz and 64 samples**. Measurements were taken both with De-Feedback bypassed and with it active. The test used Open Sound Meter on an independent system, with pink noise among the test signals.
 - Use **64 samples** for this Scarlett setup. Smaller blocks caused dropouts or audible clicks. If you test another buffer size, change only that setting between runs.
 - For a PipeWire test, check `RATE` and `QUANT` on the active driver row in `pw-top`. Press `c` at the start of each run and monitor `ERR`. For direct ALSA, check the active format in REAPER and listen to or record the physical output. [PipeWire `pw-top`](https://docs.pipewire.org/devel/page_man_pw-top_1.html)
 - Run the lowest usable buffer for at least **30 minutes** with a speech recording as input. Record the physical Scarlett output if possible. The demo periodically interrupts the audio, so also test the same route with the plugin bypassed. [Alpha Labs FAQ](https://www.alphalabsaudio.com/defeedback/)
@@ -64,9 +68,9 @@ This setup already uses Dante at 48 kHz, with Sennheiser EW-DX as the source and
 
 For this test, the EW-DX sends audio via Dante to the Avantis channel. The Avantis sends the insert to REAPER and receives the return via AES67. It then sends the mix via Dante to Martin Audio. [Audinate on AES67 interoperability](https://support.getdante.com/hc/en-gb/articles/5508253040927-AES67-Interoperability)
 
-1. Connect the Dante card's **Primary** port and the Beelink's Ethernet port to the same test network. Open Dante Controller on the Mac, enable **AES67 Mode** on the card, and verify that it is set to 48 kHz. [Audinate on AES67](https://support.getdante.com/hc/en-gb/articles/5508253040927-AES67-Interoperability)
+1. Connect the Dante card's **Primary** port and the Linux computer's Ethernet port to the same test network. Open Dante Controller on the Mac, enable **AES67 Mode** on the card, and verify that it is set to 48 kHz. [Audinate on AES67](https://support.getdante.com/hc/en-gb/articles/5508253040927-AES67-Interoperability)
 2. On the Avantis, patch one test channel through **Insert A**. Choose **Digital** as the operating level and assign Send and Return to unused outputs and inputs on the Dante I/O port. Create an **AES67 multicast flow** for the send in Dante Controller. Enable the insert once the return works. [Avantis Firmware Reference Guide](https://www.allen-heath.com/content/uploads/2023/05/Avantis-Firmware-Reference-Guide-V1.20.pdf)
 3. On Linux, use the [optional PipeWire AES67 setup script](defeedback-linux/README.md#optional-aes67-test-with-pipewire). Check PTP lock, receive the Avantis stream, and send a separate AES67 multicast stream back. Subscribe the Dante card's input to that return stream. The [AES67 Linux Daemon with ALSA RAVENNA](https://github.com/bondagit/aes67-linux-daemon/blob/master/DEVICES.md) is another option.
 4. Test the full loop with one mono track in REAPER and the plugin bypassed. Enable De-Feedback and measure the round-trip latency. Record this separately from the Scarlett measurement because the network buffers are part of this loop.
 
-This route still needs to be tested on the Beelink. Record the Dante card revision and firmware, the network interface, and the PTP settings.
+This route still needs an end-to-end hardware test. Record the Dante card revision and firmware, the network interface, and the PTP settings.

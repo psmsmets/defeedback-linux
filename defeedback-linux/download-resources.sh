@@ -7,9 +7,10 @@ bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$bundle_dir/src/apt-packages.sh"
 
 usage() {
-    printf '%s\n' 'Usage: bash download-resources.sh [--config FILE] [--output DIR] [--only RESOURCE] [--apt]' \
+    printf '%s\n' 'Usage: bash download-resources.sh [--config FILE] [--output DIR] [--only RESOURCE] [--apt] [--open-manual]' \
         'Defaults: config/resources.conf and packages/ beside this script.' \
-        'Run --apt on a connected Ubuntu amd64 machine matching the target release.'
+        'Run --apt on a connected Ubuntu amd64 machine matching the target release.' \
+        'Use --open-manual to open the vendor pages for missing manual downloads.'
 }
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 
@@ -17,10 +18,12 @@ config="$bundle_dir/config/resources.conf"
 output="$bundle_dir/packages"
 only=
 with_apt=false
+open_manual=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --help|-h) usage; exit 0 ;;
         --apt) with_apt=true ;;
+        --open-manual) open_manual=true ;;
         --config|--output|--only)
             [[ $# -ge 2 && -n $2 && $2 != -* ]] || fail "Missing value for $1."
             case $1 in
@@ -126,7 +129,10 @@ while IFS='|' read -r resource kind name url checksum extra || [[ -n $resource ]
             ;;
         nightly) download_nightly "${url%/}" ;;
         manual)
-            [[ -f $output/$name ]] || printf 'Add %s manually from %s\n' "$name" "$url"
+            if [[ ! -f $output/$name ]]; then
+                printf 'Supply %s locally. Download the package in your browser and complete any vendor confirmations at %s\n' "$name" "$url"
+                printf '%s\n' "$url" >> "$stage/manual-urls"
+            fi
             ;;
         *) fail "Unknown resource kind: $kind." ;;
     esac
@@ -152,5 +158,14 @@ if [[ $with_apt == true ]]; then
         (cd -- "$stage/apt/$group" && sha256sum -- *.deb > SHA256SUMS)
     done
     mv -- "$stage/apt" "$output/apt"
+fi
+if [[ $open_manual == true && -s $stage/manual-urls ]]; then
+    opener=xdg-open
+    if [[ $OSTYPE == darwin* ]]; then opener=open; fi
+    while IFS= read -r url; do
+        if ! command -v "$opener" >/dev/null || ! "$opener" "$url"; then
+            printf 'Open this page in your browser: %s\n' "$url" >&2
+        fi
+    done < <(sort -u "$stage/manual-urls")
 fi
 printf 'Resources: %s\n' "$output"
