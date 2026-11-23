@@ -4,7 +4,7 @@ export LC_ALL=C
 
 usage() {
     cat <<'EOF'
-Usage: bash setup-aes67.sh [--network link-local|dhcp|existing] [--quantum 48|64] [INTERFACE [RETURN_MULTICAST_IP]]
+Usage: bash setup-aes67.sh [--network link-local|dhcp|existing] [--quantum SAMPLES] [INTERFACE [RETURN_MULTICAST_IP]]
 
 Prepare an optional PipeWire AES67 test for Avantis or dLive at 48 kHz.
 Use a wired interface with a PTP hardware clock and an unused 239.69.x.x
@@ -17,7 +17,8 @@ DHCP, gateway or DNS. Use dhcp for an audio network with a DHCP server, or
 existing to preserve the current network configuration. Profiles activate on
 connection; this script does not activate them immediately.
 PipeWire defaults to 48000 Hz and a fixed quantum of 48 samples (1 ms block).
-Use --quantum 64 for a 1.333 ms block. Both settings require hardware testing.
+Allowed quantum values: 32,48,64,96,128,144,256,512,1024,8192 samples.
+All settings require hardware testing.
 A user PipeWire clock drop-in is also written; restart PipeWire to apply it.
 The return defaults to 239.69.150.244; verify that this group is unused.
 EOF
@@ -33,7 +34,7 @@ while [[ ${1:-} == --* || ${1:-} == -h ]]; do
     case $1 in
         --help|-h) usage; exit 0 ;;
         --quantum)
-            [[ $# -ge 2 ]] || fail "--quantum requires 48 or 64."
+            [[ $# -ge 2 ]] || fail "--quantum requires a sample count."
             quantum=$2; quantum_explicit=true; shift 2 ;;
         --network)
             [[ $# -ge 2 ]] || fail "--network requires a mode."
@@ -55,13 +56,16 @@ if [[ -z $iface ]]; then
         network=${network:-link-local}
     fi
     if [[ $quantum_explicit == false ]]; then
-        read -r -p 'PipeWire quantum (48/64 samples) [48]: ' quantum || fail "Input cancelled."
+        read -r -p 'PipeWire quantum (32/48/64/96/128/144/256/512/1024/8192) [48]: ' quantum || fail "Input cancelled."
         quantum=${quantum:-48}
     fi
     read -r -p 'Unused return multicast IP [239.69.150.244]: ' group || fail "Input cancelled."
     group=${group:-239.69.150.244}
 fi
-[[ $quantum == 48 || $quantum == 64 ]] || fail "Quantum must be 48 or 64 samples."
+case $quantum in
+    32|48|64|96|128|144|256|512|1024|8192) ;;
+    *) fail "Quantum must be one of: 32,48,64,96,128,144,256,512,1024,8192 samples." ;;
+esac
 case $network in link-local|dhcp|existing) ;; *) fail "Invalid network mode: $network" ;; esac
 [[ $iface =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,14}$ ]] || fail "Invalid interface name."
 [[ $group =~ ^239\.69\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]] ||

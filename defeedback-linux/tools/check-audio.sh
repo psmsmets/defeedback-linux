@@ -29,7 +29,7 @@ elif [[ ${1:-focusrite} == cq ]]; then
 elif [[ $transport == usb ]]; then
     printf 'Select this USB interface for ALSA capture and playback in REAPER. Start at 48 kHz and 128 samples.\n'
 else
-    printf 'Use the configured PipeWire clock: 48 kHz, quantum 48 by default or 64 for testing.\n'
+    printf 'Use the configured PipeWire clock: 48 kHz, quantum 48 by default; select another supported quantum through setup-aes67.sh.\n'
 fi
 printf 'Test one mono path in bypass first.\n'
 
