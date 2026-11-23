@@ -173,7 +173,7 @@ def main(argv=None):
             with Session('update', debug) as session:
                 return update(arguments, session)
         if command in ('aes67', 'appliance'):
-            actions = ('install', 'setup', 'ptp', 'audio', 'enable', 'disable', 'status') if command == 'aes67' else ('setup',)
+            actions = ('install', 'setup', 'ptp', 'ptp-status', 'audio', 'enable', 'disable', 'status') if command == 'aes67' else ('setup',)
             description = ('Install or configure optional AES67 audio.' if command == 'aes67' else
                            'Configure unattended desktop login, REAPER autostart, and power settings. Automatic AES67 startup is not implemented.')
             aes = argparse.ArgumentParser(prog='defeedback-linux ' + command, description=description)
@@ -186,7 +186,7 @@ def main(argv=None):
                 aes.error('choose ' + ' or '.join(actions))
             if command == 'aes67' and action in ('enable', 'disable', 'status'):
                 return configure_startup(action, arguments)
-            if command == 'aes67' and action in ('ptp', 'audio'):
+            if command == 'aes67' and action in ('ptp', 'ptp-status', 'audio'):
                 return start_aes67(action, arguments, debug)
             command = command + '-' + action
         return execute(dispatch(command, arguments))

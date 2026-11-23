@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Select a USB audio device, prepare REAPER preferences, and launch REAPER."""
+"""Select USB or AES67 audio, prepare REAPER preferences, and launch REAPER."""
 import argparse
 import configparser
 import fcntl
@@ -65,7 +65,7 @@ def select_card(cards, requested):
     elif any(card['family'] == 'focusrite' for card in cards):
         matches = [card for card in cards if card['family'] == 'focusrite']
     if not matches:
-        raise LookupError('No matching USB capture/playback device found. AES67 uses the explicit manual launcher.')
+        raise LookupError('No matching USB capture/playback device found.')
     if len(matches) != 1:
         names = ', '.join('hw:' + card['id'] for card in matches)
         raise RuntimeError('Multiple matching USB devices: ' + names + '. Select one with --device or DEFEEDBACK_DEVICE.')
@@ -143,7 +143,7 @@ def main():
     parser.add_argument('--debug', action='store_true', default=os.environ.get('DEFEEDBACK_DEBUG') == '1',
                         help='extra text diagnostics without recording audio')
     parser.add_argument('--device', default=os.environ.get('DEFEEDBACK_DEVICE', 'auto'),
-                        help='auto, focusrite, evo8, behringer, cq, sq, qu, or an exact ALSA card ID')
+                        help='auto, aes67, focusrite, evo8, behringer, cq, sq, qu, or an exact ALSA card ID')
     parser.add_argument('--channels', type=int, choices=(1, 2, 4, 5, 8),
                         default=os.environ.get('DEFEEDBACK_CHANNELS'), help='override the default path count')
     parser.add_argument('--print-ini', action='store_true',
@@ -156,6 +156,8 @@ def main():
                         help='skip startup successfully (default) or report an error when USB audio is absent')
     parser.add_argument('--raw', action='store_true', help='launch with saved REAPER preferences and the supplied arguments')
     args, reaper_args = parser.parse_known_args()
+    if args.device == 'aes67' and (args.raw or args.print_ini):
+        parser.error('--device aes67 uses the managed JACK profile; it cannot be combined with --raw or --print-ini')
     if args.inputs is not None or args.outputs is not None:
         if not args.print_ini or args.inputs is None or args.outputs is None:
             parser.error('--inputs and --outputs require --print-ini and must be supplied together')
@@ -192,32 +194,34 @@ def main():
             if args.debug:
                 debug_snapshot(session)
             if not args.raw:
-                deadline = time.monotonic() + (0 if args.detect else 10)
-                cards = detect_cards()
-                while not cards and time.monotonic() < deadline:
-                    time.sleep(0.5)
+                card = None
+                if args.device != 'aes67':
+                    deadline = time.monotonic() + (0 if args.detect else 10)
                     cards = detect_cards()
-                try:
-                    card = select_card(cards, args.device)
-                except LookupError as error:
-                    logger.warning('%s', error)
-                    if args.device == 'auto' and startup_config.enabled():
-                        card = None
-                    elif args.missing_audio == 'skip' and not args.detect:
-                        logger.info('REAPER startup skipped: no matching USB device and no enabled automatic AES67 fallback.')
-                        return 0
-                    else:
-                        raise RuntimeError(str(error)) from error
+                    while not cards and time.monotonic() < deadline:
+                        time.sleep(0.5)
+                        cards = detect_cards()
+                    try:
+                        card = select_card(cards, args.device)
+                    except LookupError as error:
+                        logger.warning('%s', error)
+                        if args.device == 'auto' and startup_config.enabled():
+                            card = None
+                        elif args.missing_audio == 'skip' and not args.detect:
+                            logger.info('REAPER startup skipped: no matching USB device and no enabled automatic AES67 fallback.')
+                            return 0
+                        else:
+                            raise RuntimeError(str(error)) from error
                 if card is None:
                     count = args.channels or 4
                     if count not in (1, 2, 4, 8):
                         raise RuntimeError('AES67 supports 1, 2, 4, or 8 mono paths; the default is 4.')
                     profile = startup_config.reaper_ini()
                     if not profile.is_file() or not shutil.which('pw-jack'):
-                        raise RuntimeError('Enabled AES67 fallback is missing its REAPER profile or pw-jack. Run aes67 enable again.')
+                        raise RuntimeError('AES67 is missing its REAPER profile or pw-jack. Prepare the profile with aes67 enable first.')
                     logger.info('AES67 EARLY_LAUNCH requested: %s mono paths; readiness checks will run after process launch, not gate it.', count)
                     if args.detect:
-                        print('Selected AES67 fallback: %s mono paths; readiness not checked.' % count)
+                        print('Selected AES67: %s mono paths; readiness not checked.' % count)
                         return 0
                     environment['DEFEEDBACK_TRANSPORT'] = 'aes67'
                     if not reaper_args:

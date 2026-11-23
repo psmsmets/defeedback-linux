@@ -64,6 +64,8 @@ defeedback-linux check avantis --launch
 
 The PTP command uses the configured NIC and asks sudo to run `ptp4l`. Use only one PTP client per NIC. Confirm the expected grandmaster before starting audio. The audio command refuses startup without PTP SLAVE state. The audio helper and AES67-launched REAPER monitor link, PTP port state, and AES67 source/return endpoint presence every 15 seconds; only changes are logged. External checks have short timeouts. `--debug` is available for these foreground helpers too.
 
+Use `defeedback-linux aes67 ptp-status` without sudo to inspect port state and grandmaster information. Process-alive messages and health checks continue when a supervised process closes its text output but remains running.
+
 ## Limits
 
 Logs establish process and device/network state, not audible audio quality, plugin responsiveness, PTP offset accuracy, correct subscriptions, or complete detection of xruns/packet loss. A live validation still needs signal-path, latency, stability, and failure/recovery tests. No automatic restart, bypass, USB/AES67 hot switching, or PTP/audio-helper autostart is implemented. The optional early REAPER fallback is described in [startup selection](setup.md#startup-selection).

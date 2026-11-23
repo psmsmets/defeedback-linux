@@ -61,7 +61,7 @@ if [[ ${2:-} == --launch ]]; then
     if [[ $transport == usb ]]; then
         exec "$reaper" --device "${1:-focusrite}"
     fi
-    # Refuse the raw launch unless the AES67 return and a received source exist.
+    # Require the AES67 return and a received source before the manual launch.
     if ! command -v pw-dump >/dev/null || ! command -v pw-jack >/dev/null; then
         printf 'AES67 startup skipped: PipeWire tools are not installed.\n'
         exit 0
@@ -76,7 +76,5 @@ sys.exit(0 if ready else 1)
         printf 'AES67 startup skipped: no AES67 source and return available. Start PTP and the AES67 helper first.\n'
         exit 0
     fi
-    # Use the PipeWire clock configured by setup-aes67.sh.
-    export DEFEEDBACK_TRANSPORT=aes67
-    exec pw-jack "$reaper" --raw
+    exec "$reaper" --device aes67
 fi

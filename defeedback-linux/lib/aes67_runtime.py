@@ -4,16 +4,24 @@ import argparse
 import os
 from pathlib import Path
 import re
-import subprocess
+import sys
 
-from session_log import Session, audio_health, debug_snapshot, run_logged
+from session_log import Session, audio_health, debug_snapshot, query_ptp, run_logged
 
 
 def start(action, arguments, debug=False):
     parser = argparse.ArgumentParser(prog='defeedback-linux aes67 ' + action,
-        description='Run the configured helper in the foreground with persistent text logs. Stop with Ctrl+C.')
+        description=('Query PTP state and grandmaster information.' if action == 'ptp-status' else
+                     'Run the configured helper in the foreground with persistent text logs. Stop with Ctrl+C.'))
     parser.parse_args(arguments)
     with Session('aes67-' + action, debug) as session:
+        if action == 'ptp-status':
+            result = query_ptp('GET PORT_DATA_SET', 'GET TIME_STATUS_NP')
+            print(result.stdout, end='')
+            print(result.stderr, end='', file=sys.stderr)
+            session.logger.info('PTP query exit=%s: %s', result.returncode,
+                                (result.stdout + result.stderr).rstrip())
+            return result.returncode
         config = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'defeedback/pipewire-aes67.conf'
         if not config.is_file():
             raise RuntimeError('Run defeedback-linux aes67 setup first.')
@@ -25,8 +33,7 @@ def start(action, arguments, debug=False):
             command = ['sudo', 'ptp4l', '-i', iface, '-H', '-4', '-E', '-s', '-m', '--domainNumber=0',
                        '--uds_address=/run/ptp4l-defeedback', '--uds_ro_address=/run/ptp4l-defeedbackro']
         else:
-            result = subprocess.run(['pmc', '-u', '-b', '0', '-s', '/run/ptp4l-defeedbackro',
-                                     'GET PORT_DATA_SET'], text=True, capture_output=True, timeout=3)
+            result = query_ptp('GET PORT_DATA_SET')
             states = re.findall(r'portState\s+(\w+)', result.stdout)
             if result.returncode or not states or any(state != 'SLAVE' for state in states):
                 raise RuntimeError('PTP is not in SLAVE state. Start the PTP helper and confirm the expected grandmaster first.')

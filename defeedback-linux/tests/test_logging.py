@@ -9,8 +9,9 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'lib'))
 import session_log as logs
@@ -55,6 +56,42 @@ class Logging(unittest.TestCase):
         self.assertIn('PROCESS exit status=7', text)
         self.assertIn('SESSION end', text)
         self.assertIn('stdout test', console.getvalue())
+
+    def test_health_and_heartbeat_continue_after_output_closes(self):
+        clock = time.monotonic
+        health = Mock()
+        with logs.Session('closed-output') as session, \
+                patch.object(logs.time, 'monotonic', side_effect=lambda: clock() * 100):
+            result = logs.run_logged([sys.executable, '-c',
+                'import os,time; os.close(1); os.close(2); time.sleep(1.3)'], session, health=health)
+        self.assertEqual(result, 0)
+        self.assertGreaterEqual(health.call_count, 2)
+        self.assertIn('PROCESS alive pid=', session.path.read_text())
+        self.assertIn('PROCESS exit status=0', session.path.read_text())
+
+    def test_ptp_queries_use_private_unique_sockets_and_cleanup(self):
+        paths = []
+        def run(command, **kwargs):
+            path = Path(command[command.index('-i') + 1])
+            paths.append(path)
+            self.assertTrue(path.parent.is_dir())
+            self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
+            self.assertLess(len(os.fsencode(path)), 108)
+            path.touch()
+            if len(paths) == 1:
+                logs.query_ptp('GET TIME_STATUS_NP')
+                self.assertTrue(path.exists(), 'Concurrent query must preserve the outer socket')
+            return subprocess.CompletedProcess(command, 0, 'portState SLAVE', '')
+        with patch.object(logs.subprocess, 'run', side_effect=run):
+            logs.query_ptp('GET PORT_DATA_SET')
+        self.assertNotEqual(paths[0], paths[1])
+        self.assertTrue(all(not path.parent.exists() for path in paths))
+        def timeout(command, **kwargs):
+            paths.append(Path(command[command.index('-i') + 1]))
+            raise subprocess.TimeoutExpired(command, kwargs['timeout'])
+        with patch.object(logs.subprocess, 'run', side_effect=timeout), self.assertRaises(subprocess.TimeoutExpired):
+            logs.query_ptp('GET PORT_DATA_SET', timeout=2)
+        self.assertFalse(paths[-1].parent.exists())
 
     def test_logs_inventory_tail_and_journal(self):
         with logs.Session('reader') as session:
@@ -131,14 +168,27 @@ class Logging(unittest.TestCase):
         with patch.object(aes67_runtime, 'run_logged', return_value=0) as run:
             self.assertEqual(aes67_runtime.start('ptp', []), 0)
             self.assertEqual(run.call_args.args[0][:4], ['sudo', 'ptp4l', '-i', 'enp2s0'])
-        with patch.object(aes67_runtime.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'portState LISTENING', '')):
+        with patch.object(logs.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'portState LISTENING', '')):
             with self.assertRaisesRegex(RuntimeError, 'SLAVE'):
                 aes67_runtime.start('audio', [])
-        with patch.object(aes67_runtime.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'portState SLAVE', '')), patch.object(aes67_runtime, 'run_logged', return_value=0) as run:
+        with patch.object(logs.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'portState SLAVE', '')) as query, patch.object(aes67_runtime, 'run_logged', return_value=0) as run:
             self.assertEqual(aes67_runtime.start('audio', []), 0)
             self.assertEqual(run.call_args.args[0], ['pipewire', '-c', str(config)])
+            self.assertIn('-i', query.call_args.args[0])
         with contextlib.redirect_stdout(io.StringIO()):
             log_commands.show_logs(['--all'])
+
+    def test_ptp_status_dispatch_and_output(self):
+        with patch.object(logs.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0,
+                'portState SLAVE\ngmIdentity test-grandmaster\n', '')) as query, \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cli.main(['aes67', 'ptp-status']), 0)
+        self.assertIn('gmIdentity test-grandmaster', output.getvalue())
+        self.assertEqual(query.call_args.args[0][-2:], ['GET PORT_DATA_SET', 'GET TIME_STATUS_NP'])
+        self.assertIn('-i', query.call_args.args[0])
+        with patch.object(logs.subprocess, 'run', return_value=subprocess.CompletedProcess([], 1, '', 'unavailable')), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(cli.main(['aes67', 'ptp-status']), 1)
 
     def test_health_reports_transitions_without_recording(self):
         config = self.base / 'config/defeedback/pipewire-aes67.conf'

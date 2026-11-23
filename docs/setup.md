@@ -135,6 +135,8 @@ On first launch, REAPER runs the template action without prompts and saves `~/.l
 
 Run `defeedback-linux --detect` to inspect the automatic device selection without starting REAPER. Use `defeedback-linux --device cq`, an exact ID such as `defeedback-linux --device hw:CQ12T`, or `defeedback-linux --channels 2` to override selection or channel count. `DEFEEDBACK_DEVICE` and `DEFEEDBACK_CHANNELS` provide the same overrides for desktop and service environments. Explicit REAPER arguments are forwarded after device configuration. `defeedback-linux --raw` bypasses automatic selection and uses saved REAPER preferences.
 
+`defeedback-linux --device aes67` explicitly uses the [managed JACK profile](aes67.md#enable-experimental-startup-fallback), even with USB connected or automatic fallback disabled. It defaults to four mono paths and starts without readiness gating; `defeedback-linux check avantis --launch` checks endpoint presence first.
+
 Launcher events, REAPER output, and process status are saved as bounded session logs under `~/.local/state/defeedback/logs/`. Template/version/mono-validation messages use rotating `template-DEVICE-Nch.log` files there. Use `defeedback-linux logs --list` to find current and older logs. XDG configuration and state directory overrides are honored. See [logging](logging.md).
 
 With no matching USB device, the default `--missing-audio skip` logs the reason and exits successfully without starting REAPER. Use `--missing-audio error` or `DEFEEDBACK_MISSING_AUDIO=error` for an error exit instead. `--detect` reports missing devices as errors. Ambiguous devices and invalid routing remain errors. `--raw` bypasses automatic USB checks.

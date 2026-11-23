@@ -105,6 +105,14 @@ def debug_snapshot(session):
             session.logger.debug('%s: %s', command[0], error)
 
 
+def query_ptp(*requests, timeout=3):
+    """Use a private, short, writable client socket for each non-root pmc query."""
+    with tempfile.TemporaryDirectory(prefix='df-ptp-', dir='/tmp') as directory:
+        return subprocess.run(['pmc', '-u', '-b', '0', '-i', str(Path(directory) / 'pmc'),
+                               '-s', '/run/ptp4l-defeedbackro', *requests],
+                              capture_output=True, text=True, timeout=timeout)
+
+
 def run_logged(command, session, environment=None, health=None):
     """Drain child text output separately from audio; bound queued output and disk usage."""
     output = queue.Queue(maxsize=256)
@@ -147,19 +155,25 @@ def run_logged(command, session, environment=None, health=None):
     next_health = time.monotonic()
     exited_at = None
     next_heartbeat = time.monotonic() + 60
+    output_ended = False
     try:
         while True:
             try:
+                if output_ended:
+                    child.wait(timeout=1)
+                    break
                 block = output.get(timeout=1)
-            except queue.Empty:
+            except (queue.Empty, subprocess.TimeoutExpired):
                 block = b''
-                if child.poll() is not None:
+                if not output_ended and child.poll() is not None:
                     exited_at = exited_at or time.monotonic()
                     if time.monotonic() - exited_at >= 2:
                         session.logger.warning('Output pipe still open after process exit; stopping capture.')
                         break
             if block is None:
-                break
+                output_ended = True
+                if child.poll() is not None:
+                    break
             if block:
                 text = block.decode('utf-8', errors='replace')
                 session.logger.info('OUTPUT %s', text.rstrip())
@@ -171,7 +185,7 @@ def run_logged(command, session, environment=None, health=None):
             if time.monotonic() >= next_heartbeat and child.poll() is None:
                 session.logger.info('PROCESS alive pid=%s', child.pid)
                 next_heartbeat = time.monotonic() + 60
-            if health and time.monotonic() >= next_health:
+            if health and child.poll() is None and time.monotonic() >= next_health:
                 try:
                     health(session.logger)
                 except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
@@ -219,8 +233,7 @@ def audio_health(card_id=None, aes67=False):
                 link = False
             report(logger, 'aes67-link:' + iface, 'up' if link else 'down', link)
             try:
-                result = subprocess.run(['pmc', '-u', '-b', '0', '-s', '/run/ptp4l-defeedbackro',
-                                         'GET PORT_DATA_SET'], capture_output=True, text=True, timeout=2)
+                result = query_ptp('GET PORT_DATA_SET', timeout=2)
                 states = re.findall(r'portState\s+(\w+)', result.stdout) if result.returncode == 0 else []
             except (OSError, subprocess.TimeoutExpired):
                 states = []

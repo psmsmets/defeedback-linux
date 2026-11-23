@@ -27,6 +27,34 @@ launcher = module('launcher', BUNDLE / 'lib/reaper-launch.py')
 
 
 class Commands(unittest.TestCase):
+    def test_manual_aes67_check_launches_managed_device_only_with_endpoints(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            binaries = home / 'bin'
+            binaries.mkdir()
+            for name in ('ip', 'wpctl', 'pw-link', 'pw-jack'):
+                path = binaries / name
+                path.write_text('#!/bin/sh\nexit 0\n')
+                path.chmod(0o755)
+            dump = binaries / 'pw-dump'
+            dump.write_text('#!/bin/sh\ncat "$HOME/nodes.json"\n')
+            dump.chmod(0o755)
+            reaper = home / '.local/share/defeedback/bin/reaper'
+            reaper.parent.mkdir(parents=True)
+            reaper.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/launch-args"\n')
+            reaper.chmod(0o755)
+            environment = dict(os.environ, HOME=str(home), PATH=str(binaries) + os.pathsep + os.environ['PATH'])
+            for nodes, expected in [('[]', False),
+                    ('[{"info":{"props":{"node.name":"defeedback-aes67-return"}}}]', False),
+                    ('[{"info":{"props":{"node.name":"defeedback-aes67-return"}}},'
+                     '{"info":{"props":{"device.api":"aes67","media.class":"Audio/Source"}}}]', True)]:
+                (home / 'nodes.json').write_text(nodes)
+                result = subprocess.run(['/bin/bash', str(BUNDLE / 'tools/check-audio.sh'), 'avantis', '--launch'],
+                                        env=environment, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((home / 'launch-args').exists(), expected)
+            self.assertEqual((home / 'launch-args').read_text().splitlines(), ['--device', 'aes67'])
+
     def test_dispatch(self):
         for args, suffix in [([], 'reaper-launch.py'), (['--device', 'cq'], 'reaper-launch.py'),
                              (['license-gui'], 'open-license-gui.sh'),

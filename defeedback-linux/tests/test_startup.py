@@ -76,6 +76,29 @@ class Startup(unittest.TestCase):
         self.assertEqual(run.call_args.args[2]['DEFEEDBACK_TEMPLATE_CHANNELS'], '8')
         self.assertTrue(run.call_args.args[2]['DEFEEDBACK_TEMPLATE_OUTPUT'].endswith('8ch.RPP'))
 
+    def test_explicit_aes67_uses_managed_profile_with_usb_and_fallback_disabled(self):
+        self.enable()
+        startup_config.configure('disable', [])
+        global_ini = startup_config.reaper_ini().parent / 'reaper.ini'
+        global_ini.write_text('[reaper]\nlinux_audio_mode=1\n')
+        run = self.launch([dict(id='EVO8', family='evo8', inputs=4, outputs=4)], ['--device', 'aes67'])
+        command = run.call_args.args[0]
+        self.assertEqual(command[0], '/usr/bin/pw-jack')
+        self.assertEqual(command[command.index('-cfgfile') + 1], str(startup_config.reaper_ini()))
+        self.assertEqual(run.call_args.args[2]['DEFEEDBACK_TEMPLATE_CHANNELS'], '4')
+        self.assertIn('linux_audio_mode=1', global_ini.read_text())
+        self.assertFalse(startup_config.enabled())
+
+    def test_explicit_aes67_requires_profile_and_valid_channel_count(self):
+        with self.assertRaisesRegex(RuntimeError, 'profile'):
+            self.launch([], ['--device', 'aes67'])
+        self.enable()
+        with self.assertRaisesRegex(RuntimeError, 'mono paths'):
+            self.launch([], ['--device', 'aes67', '--channels', '5'])
+        with patch.object(launcher.shutil, 'which', return_value=None), \
+                patch('sys.argv', ['reaper', '--device', 'aes67']), self.assertRaisesRegex(RuntimeError, 'pw-jack'):
+            launcher.main()
+
     def test_usb_priority_and_explicit_selection(self):
         self.enable()
         run = self.launch([dict(id='EVO8', family='evo8', inputs=4, outputs=4)])

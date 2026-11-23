@@ -10,6 +10,7 @@ After installing or updating the integration, use `defeedback-linux` from any di
 | --- | --- |
 | `defeedback-linux` | Start REAPER with the connected USB device |
 | `defeedback-linux --device cq` | Select a USB device explicitly |
+| `defeedback-linux --device aes67` | Start with the managed JACK profile; defaults to four mono paths |
 | `defeedback-linux run --help` | Show launcher options |
 | `defeedback-linux update` | Fetch project code and install the integration |
 | `defeedback-linux update --check` | Fetch and compare revisions without activating an update |
@@ -21,6 +22,7 @@ After installing or updating the integration, use `defeedback-linux` from any di
 | `defeedback-linux aes67 disable` | Disable AES67 fallback for future launches |
 | `defeedback-linux aes67 status` | Show the activation setting |
 | `defeedback-linux aes67 ptp` | Run the configured PTP client with session logging |
+| `defeedback-linux aes67 ptp-status` | Query PTP port state and grandmaster information without sudo |
 | `defeedback-linux aes67 audio` | Run the AES67 helper after checking PTP SLAVE state |
 | `defeedback-linux appliance setup` | Enable desktop autologin, REAPER autostart, and appliance power settings |
 | `defeedback-linux trim --check` | Preview optional application removal |
