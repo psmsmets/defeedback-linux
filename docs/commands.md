@@ -1,8 +1,8 @@
 # Workstation command
 
-Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. The plugin must be obtained and licensed separately.
+Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. REAPER and Alpha Labs De-Feedback are separately licensed products. This project includes neither license. Obtain and activate each product according to its vendor's terms.
 
-Plugin and licensing: [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/).
+Products and licensing: [REAPER](https://www.reaper.fm/purchase.php) · [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/).
 
 After installing or updating the integration, use `defeedback-linux` from any directory. It uses Python's standard library; no Typer or pip installation is required.
 

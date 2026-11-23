@@ -131,8 +131,8 @@ def update(arguments):
 
 def main(argv=None):
     arguments = list(sys.argv[1:] if argv is None else argv)
-    parser = argparse.ArgumentParser(prog='defeedback-linux', description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. The plugin must be obtained and licensed separately.',
-        epilog='Plugin and licensing: https://www.alphalabsaudio.com/defeedback/ — Run a subcommand with --help for its options. Without a command, start REAPER.')
+    parser = argparse.ArgumentParser(prog='defeedback-linux', description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. REAPER and De-Feedback require separate licenses; this project includes neither license.',
+        epilog='Products and licensing: REAPER https://www.reaper.fm/purchase.php — De-Feedback https://www.alphalabsaudio.com/defeedback/ — Run a subcommand with --help for its options. Without a command, start REAPER.')
     parser.add_argument('command', nargs='?', choices=('run', 'update', 'license-gui', 'aes67', 'check', 'diagnose', 'ini'),
                         help='run REAPER, update code, open licensing, configure AES67, check audio, diagnose, or print INI')
     try:
