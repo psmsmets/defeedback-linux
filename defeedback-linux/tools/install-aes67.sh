@@ -2,7 +2,7 @@
 # Install optional AES67 dependencies without requiring an active audio network.
 set -euo pipefail
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
-    printf 'Usage: defeedback aes67 install\nInstall optional AES67 packages on Ubuntu Studio.\n'
+    printf 'Usage: defeedback-linux aes67 install\nInstall optional AES67 packages on Ubuntu Studio.\n'
     exit 0
 fi
 [[ $# == 0 ]] || { printf 'No arguments expected.\n' >&2; exit 2; }

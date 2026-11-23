@@ -21,7 +21,7 @@ from urllib.request import urlopen
 
 BUNDLE = Path(__file__).resolve().parent.parent
 RESOURCES = {
-    'defeedback': 'bin/defeedback',
+    'defeedback-linux': 'bin/defeedback-linux',
     'lib/cli.py': 'lib/cli.py',
     'lib/open-license-gui.sh': 'lib/open-license-gui.sh',
     'config/resources.conf': 'config/resources.conf',
@@ -139,7 +139,7 @@ def install(runtime, installed, app, backup):
     moved_old = False
     installed_new = False
     changed = []
-    link = Path.home() / ".local/bin/defeedback"
+    link = Path.home() / ".local/bin/defeedback-linux"
     link_created = False
     try:
         if runtime:
@@ -161,13 +161,13 @@ def install(runtime, installed, app, backup):
             metadata.write_text(json.dumps({'revision': revision}) + '\n')
             atomic_copy(metadata, app / 'installation.json')
             changed.append('installation.json')
-        link = Path.home() / '.local/bin/defeedback'
+        link = Path.home() / '.local/bin/defeedback-linux'
         link.parent.mkdir(parents=True, exist_ok=True)
         if not link.exists() and not link.is_symlink():
-            link.symlink_to(app / 'bin/defeedback')
+            link.symlink_to(app / 'bin/defeedback-linux')
             link_created = True
-        elif not link.is_symlink() or link.resolve() != (app / 'bin/defeedback').resolve():
-            logging.warning('Keeping existing command %s; use %s.', link, app / 'bin/defeedback')
+        elif not link.is_symlink() or link.resolve() != (app / 'bin/defeedback-linux').resolve():
+            logging.warning('Keeping existing command %s; use %s.', link, app / 'bin/defeedback-linux')
     except BaseException:
         if link_created:
             link.unlink(missing_ok=True)
@@ -181,8 +181,36 @@ def install(runtime, installed, app, backup):
         if moved_old:
             old_runtime.rename(installed)
         raise
+    # Remove only the old command symlink installed by this project.
+    old_command = Path.home() / '.local/bin/defeedback'
+    try:
+        if old_command.is_symlink() and old_command.resolve() == (app / 'bin/defeedback').resolve():
+            old_command.unlink()
+        refresh_desktop_names()
+    except OSError as error:
+        logging.warning('Integration installed, but command/desktop cleanup failed: %s', error)
     if moved_old:
         logging.info('Previous REAPER runtime: %s', old_runtime)
+
+
+def refresh_desktop_names():
+    home = Path.home()
+    applications = Path(os.environ.get('XDG_DATA_HOME', home / '.local/share')) / 'applications'
+    desktop = home / 'Desktop'
+    if shutil.which('xdg-user-dir'):
+        result = subprocess.run(['xdg-user-dir', 'DESKTOP'], text=True, capture_output=True)
+        candidate = Path(result.stdout.strip())
+        if result.returncode == 0 and candidate.is_absolute() and candidate != home:
+            desktop = candidate
+    for directory in (applications, desktop):
+        entry = directory / 'defeedback-reaper.desktop'
+        if not entry.is_file():
+            continue
+        lines = entry.read_text().splitlines()
+        lines = ['Name=De-Feedback Linux — unofficial integration' if line.startswith('Name=') else
+                 'Comment=Unofficial Linux integration for the Alpha Labs De-Feedback plugin' if line.startswith('Comment=') else
+                 line for line in lines]
+        entry.write_text('\n'.join(lines) + '\n')
 
 
 def main():

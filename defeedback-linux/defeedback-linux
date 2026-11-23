@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""De-Feedback workstation command."""
+"""Unofficial Linux integration for Alpha Labs De-Feedback."""
 from pathlib import Path
 import sys
 

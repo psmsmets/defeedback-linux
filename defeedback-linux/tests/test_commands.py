@@ -57,16 +57,29 @@ class Commands(unittest.TestCase):
             home = Path(directory)
             app = home / '.local/share/defeedback'
             backup = home / 'backup'
-            updater.install(None, home / 'REAPER', app, backup)
+            old = home / '.local/bin/defeedback'
+            old.parent.mkdir(parents=True)
+            old.symlink_to(app / 'bin/defeedback')
+            desktop = home / 'Desktop/defeedback-reaper.desktop'
+            desktop.parent.mkdir()
+            desktop.write_text('[Desktop Entry]\nName=REAPER\nExec=reaper\n')
+            with patch.object(updater.shutil, 'which', return_value=None):
+                updater.install(None, home / 'REAPER', app, backup)
+            self.assertFalse(old.is_symlink())
+            self.assertIn('Name=De-Feedback Linux — unofficial integration', desktop.read_text())
+            self.assertIn('Exec=reaper', desktop.read_text())
+            old.symlink_to(home / 'unrelated-command')
+            updater.install(None, home / 'REAPER', app, home / 'backup-unrelated')
+            self.assertTrue(old.is_symlink())
             for source, target in updater.RESOURCES.items():
                 self.assertEqual((app / target).read_bytes(), (BUNDLE / source).read_bytes())
-            self.assertTrue((home / '.local/bin/defeedback').is_symlink())
-            result = subprocess.run([str(home / '.local/bin/defeedback'), 'ini', '--device',
+            self.assertTrue((home / '.local/bin/defeedback-linux').is_symlink())
+            result = subprocess.run([str(home / '.local/bin/defeedback-linux'), 'ini', '--device',
                                      'hw:EVO8', '--inputs', '4', '--outputs', '4'],
                                     text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('alsa_indev=hw:EVO8', result.stdout)
-            original = (app / 'bin/defeedback').read_bytes()
+            original = (app / 'bin/defeedback-linux').read_bytes()
             copy = updater.atomic_copy
             calls = 0
 
@@ -79,7 +92,7 @@ class Commands(unittest.TestCase):
 
             with patch.object(updater, 'atomic_copy', side_effect=fail_once), self.assertRaises(OSError):
                 updater.install(None, home / 'REAPER', app, home / 'backup2')
-            self.assertEqual((app / 'bin/defeedback').read_bytes(), original)
+            self.assertEqual((app / 'bin/defeedback-linux').read_bytes(), original)
 
 
 class GitUpdates(unittest.TestCase):

@@ -375,7 +375,7 @@ spec.loader.exec_module(module)
 module.install(None, runtime, app, backup)
 PYINSTALL
 link_command "$app_dir/bin/reaper" "$reaper_dir/reaper"
-install_launcher reaper REAPER "$app_dir/bin/reaper" 'Digital audio workstation'
+install_launcher reaper 'De-Feedback Linux — unofficial integration' "$app_dir/bin/defeedback-linux" 'Unofficial Linux integration for the Alpha Labs De-Feedback plugin'
 
 vsthost_dir="$app_dir/vsthostx64"
 if [[ ! -f $vsthost_dir/vsthost.exe ]]; then

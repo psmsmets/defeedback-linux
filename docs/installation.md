@@ -8,7 +8,7 @@ Run the commands from the top level of the Linux bundle.
 | `setup-defeedback.sh` | Installs the audio workstation for the current Ubuntu Studio user. |
 | `update-defeedback.sh` | Updates REAPER and the hardware-aware launcher/template resources; supports version checks and local archives. |
 | `config/` | Download URLs, filenames, checksums where available, and Ubuntu package lists. |
-| `defeedback` | Unified command for launching, licensing, audio tools, and Git updates. |
+| `defeedback-linux` | Unified command for launching, licensing, audio tools, and Git updates. |
 | `tests/` | Automated command and update checks using local Git repositories. |
 | `lib/` | Internal installation and launcher components. |
 | `reaper/` | Mono template generator and source plugin state. |

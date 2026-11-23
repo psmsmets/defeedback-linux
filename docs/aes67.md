@@ -9,8 +9,8 @@ AES67 audio and eight simultaneous mono instances are **not yet hardware-validat
 After base installation, run as your regular desktop user:
 
 ```bash
-defeedback aes67 install
-defeedback aes67 setup
+defeedback-linux aes67 install
+defeedback-linux aes67 setup
 ```
 
 Installation requires Internet access and installs the optional PipeWire, JACK, PTP, NetworkManager, and ACL packages. It checks for the packaged PipeWire AES67 configuration. If that configuration is missing, the distribution's PipeWire needs upgrading before setup can proceed. The optional installer has no offline-package mode.
@@ -34,7 +34,7 @@ The return multicast group must be unused, differ from the console send group, a
 For explicit configuration:
 
 ```bash
-defeedback aes67 setup --quantum 48 enp2s0 239.69.150.244
+defeedback-linux aes67 setup --quantum 48 enp2s0 239.69.150.244
 ```
 
 A cable is not required to prepare configuration, but the selected NIC must have hardware TX/RX timestamping and a PTP hardware clock. Setup grants the current user persistent read access to that clock via a udev rule tied to the NIC's PCI address and user UID. It applies the ACL immediately. Repeat setup if changing NIC or user.
@@ -65,7 +65,7 @@ A 48-sample block at 48 kHz lasts **1 ms**; this is not total insert latency. Ne
 2. Keep console inserts bypassed. Patch unused card sockets for insert sends/returns and create the console's AES67 multicast send. Start with one test path; use one eight-channel stream in each direction for the full configuration.
 3. Run the PTP command printed by setup, with sudo. Use only one PTP client on the interface. Run the printed `pmc` checks and confirm `SLAVE` state and the expected grandmaster.
 4. Start the printed PipeWire helper command as your desktop user. It uses SAP for stream discovery and announcement and exports audio nodes to the existing PipeWire graph. [PipeWire AES67 profile](https://github.com/PipeWire/pipewire/blob/1.6.2/src/daemon/pipewire-aes67.conf.in)
-5. Run `defeedback check avantis --launch` (or `dlive`). It skips launching when an AES67 source or the return is missing; this does not verify PTP lock or subscriptions. Select JACK in REAPER.
+5. Run `defeedback-linux check avantis --launch` (or `dlive`). It skips launching when an AES67 source or the return is missing; this does not verify PTP lock or subscriptions. Select JACK in REAPER.
 6. Map console stream channels 1–8 to REAPER inputs 1–8 and REAPER outputs 1–8 to `defeedback-aes67-return` channels 1–8. Use the [mono template generator](reaper-projects.md) and choose `1ch` for the initial test or `8ch` for the full test. Templates enable monitoring and FX; bypass the FX for the baseline test.
 7. In Dante Controller, subscribe the card inputs to the corresponding **De-Feedback Return** channels and patch them to the console insert returns. Verify each path before enabling its insert and FX.
 8. Verify `RATE` and `QUANT` in `pw-top`, reset `ERR` with `c`, and monitor errors under load. Measure round-trip latency in bypass and with De-Feedback active. Test eight mono paths and repeat the chosen configuration after a cold boot.

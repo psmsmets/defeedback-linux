@@ -55,7 +55,7 @@ def read_source(config):
 
 
 def update(arguments):
-    parser = argparse.ArgumentParser(prog='defeedback update',
+    parser = argparse.ArgumentParser(prog='defeedback-linux update',
                                      description='Fetch project code and install workstation integration.')
     parser.add_argument('--check', action='store_true', help='fetch and compare without activating an update')
     parser.add_argument('--reaper', action='store_true', help='also update the REAPER runtime')
@@ -131,8 +131,8 @@ def update(arguments):
 
 def main(argv=None):
     arguments = list(sys.argv[1:] if argv is None else argv)
-    parser = argparse.ArgumentParser(prog='defeedback', description=__doc__,
-        epilog='Run a subcommand with --help for its options. Without a command, start REAPER.')
+    parser = argparse.ArgumentParser(prog='defeedback-linux', description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. The plugin must be obtained and licensed separately.',
+        epilog='Plugin and licensing: https://www.alphalabsaudio.com/defeedback/ — Run a subcommand with --help for its options. Without a command, start REAPER.')
     parser.add_argument('command', nargs='?', choices=('run', 'update', 'license-gui', 'aes67', 'check', 'diagnose', 'ini'),
                         help='run REAPER, update code, open licensing, configure AES67, check audio, diagnose, or print INI')
     try:
@@ -148,7 +148,7 @@ def main(argv=None):
         if command == 'update':
             return update(arguments)
         if command == 'aes67':
-            aes = argparse.ArgumentParser(prog='defeedback aes67', description='Install or configure optional AES67 audio.')
+            aes = argparse.ArgumentParser(prog='defeedback-linux aes67', description='Install or configure optional AES67 audio.')
             aes.add_argument('action', choices=('install', 'setup'))
             if not arguments or arguments[0] in ('-h', '--help'):
                 aes.print_help()
