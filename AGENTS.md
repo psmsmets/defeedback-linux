@@ -1,5 +1,17 @@
 # Repository instructions
 
-Write all repository content in English, including documentation, code comments, CLI help, and user-facing script messages. Apply this convention to both new content and edits.
+Write all repository content in English, including documentation, code comments, CLI help, and user-facing script messages.
 
-Use Focusrite Scarlett over USB as the default profile for setup and initial audio tests. Keep SQ and CQ USB profiles and Avantis and dLive AES67 profiles available as explicit choices.
+This is an unofficial Linux integration for Alpha Labs De-Feedback, not the plugin itself. Use `defeedback-linux` as the public command. Keep the unofficial status, separate REAPER and De-Feedback licensing, and vendor links clear in the README and CLI help.
+
+Target Ubuntu Studio with Plasma. The goal is unattended live operation with settings and routing selected at startup for a connected USB device or AES67. Clearly distinguish implemented functionality, hardware-validated results, and planned work. Do not describe AES67 autostart, automatic recovery, or monitor-free boot as working without supporting implementation and tests.
+
+Use Focusrite Scarlett over USB as the default profile for setup and initial audio tests. Keep Audient EVO8, Behringer UMC202HD, SQ and CQ USB support, and Avantis and dLive AES67 profiles available. Enforce a maximum of eight mono processing paths. Common USB settings are 48000 Hz, 24-bit, 64 samples, and three periods. AES67 defaults to 48000 Hz and quantum 48, with the supported quantum choices retained; network buffering is separate from graph block duration and total insert latency.
+
+Reserve the second wired interface for AES67 and keep control/Internet separate. The reference Beelink uses enp2s0 for AES67 and enp1s0 for control/Internet; confirm actual interface names. Default AES67 networking to automatic link-local without DHCP, gateway, or DNS. Keep DHCP and existing network configuration as explicit alternatives. Do not change the control interface as a side effect of audio setup.
+
+Keep routine logging lightweight, bounded, and accessible through `defeedback-linux logs`. Use `--debug` for additional text diagnostics; logging and debug mode must never record audio. Do not add automatic device switching, restarts, or bypass behavior without an explicit design and validation for live use.
+
+Keep documentation compact and generic. Preserve relevant test hardware and measurement details, with test results maintained in docs rather than duplicated here. Remove personal paths, unrelated devices, obsolete workflows, and development history. Use the public wrapper in user-facing examples where supported.
+
+Keep internal components in defeedback-linux/lib/, REAPER template resources in defeedback-linux/reaper/, and operator tools in defeedback-linux/tools/. Update the installer, updater resource list, CLI help, documentation, and relevant tests together when commands or paths change. Preserve clean stdout for INI generation.
