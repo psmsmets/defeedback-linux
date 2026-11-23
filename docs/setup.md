@@ -223,3 +223,15 @@ Reserve `enp2s0` for AES67 and retain `enp1s0` for control and Internet. Confirm
 The USB launcher now defaults to `--missing-audio skip`: if no matching USB device appears within ten seconds it logs the reason and exits successfully without opening REAPER. It does not fall through to saved device preferences or an unconfigured AES67 backend. Use `reaper --missing-audio error` or `DEFEEDBACK_MISSING_AUDIO=error` for strict failure; the environment variable also supports `skip` in desktop/service startup environments. `--detect` continues to report missing devices as errors. An absent device is distinct from ambiguous devices or invalid routing, which remain errors.
 
 The explicit `bash tools/check-audio.sh avantis --launch` (or `dlive`) skips launching if the AES67 return and a received AES67 source are absent. This detects endpoint availability, not valid PTP lock or correct channel subscriptions; verify those separately. Automatic AES67 service startup and routing are not enabled. `reaper --raw` remains an expert override and bypasses these USB checks. No software check guarantees protection against device removal or audio failures after launch.
+
+
+### AES67 network modes
+
+Run `bash tools/setup-aes67.sh` without arguments for interactive setup. It lists interfaces, suggests `enp0s2`, and defaults to Dante link-local without DHCP. On the Beelink identified above, enter `enp2s0` instead; Linux interface names must match the actual machine. The return multicast suggestion is `239.69.150.244`; check that it is unused and matches the Dante receive prefix.
+
+For unattended configuration, use `bash tools/setup-aes67.sh enp2s0 239.69.150.244`. The default creates a dedicated NetworkManager profile using automatic `169.254.x.x/16` addressing, no default route, no DNS, and disabled IPv6. Use `--network dhcp` before the interface for an audio network with DHCP, or `--network existing` to retain a manually configured address (including link-local). Link-local addresses are accepted by the IPv4 check. The script can prepare the profile and audio configuration without a cable, provided packages and the hardware clock are available. It prints the profile activation command; connect and activate before starting PTP or audio. Existing unrelated profiles and the control interface are not modified. A pre-existing dedicated profile with conflicting settings is rejected for review.
+
+
+### Persistent PTP clock access
+
+The optional installer includes `acl`, `udev`, and NetworkManager. Setup installs a udev rule scoped to the selected NIC PCI address and the desktop user UID, granting that user read access to its PTP device. It also applies the ACL immediately, so no reboot or logout is needed. The rule follows the NIC if its `ptpN` index changes across boots. Other PTP devices are not affected. Run setup without sudo; it uses sudo only for system configuration and ACL installation. PipeWire runs as the desktop user; `ptp4l` still runs separately with sudo. Re-run setup if moving to a different NIC or user account. Hardware PTP lock and eight-channel audio still require testing on the connected system.

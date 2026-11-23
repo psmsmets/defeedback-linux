@@ -4,26 +4,52 @@ export LC_ALL=C
 
 usage() {
     cat <<'EOF'
-Usage: bash setup-aes67.sh INTERFACE RETURN_MULTICAST_IP
+Usage: bash setup-aes67.sh [--network link-local|dhcp|existing] [INTERFACE [RETURN_MULTICAST_IP]]
 
 Prepare an optional PipeWire AES67 test for Avantis or dLive at 48 kHz.
 Use a wired interface with a PTP hardware clock and an unused 239.69.x.x
 return group that matches the Dante card's AES67 receive prefix.
 Run as your desktop user. The script writes a per-user config and prints
-the commands to start the test; it does not start or restart services.
+the commands to start the test; it does not start or restart audio services.
+Without INTERFACE, prompt interactively (suggested interface: enp0s2).
+The default network mode creates a NetworkManager link-local profile without
+DHCP, gateway or DNS. Use dhcp for an audio network with a DHCP server, or
+existing to preserve the current network configuration. Profiles activate on
+connection; this script does not activate them immediately.
+The return defaults to 239.69.150.244; verify that this group is unused.
 EOF
 }
 
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 
-if [[ ${1:-} == --help || ${1:-} == -h ]]; then
-    usage
-    exit 0
+network=link-local
+network_explicit=false
+while [[ ${1:-} == --* || ${1:-} == -h ]]; do
+    case $1 in
+        --help|-h) usage; exit 0 ;;
+        --network)
+            [[ $# -ge 2 ]] || fail "--network requires a mode."
+            network=$2; network_explicit=true; shift 2 ;;
+        *) fail "Unknown option: $1" ;;
+    esac
+done
+[[ $# -le 2 ]] || { usage >&2; exit 2; }
+iface=${1:-}
+group=${2:-239.69.150.244}
+if [[ -z $iface ]]; then
+    [[ -t 0 ]] || fail "Specify INTERFACE when running non-interactively."
+    printf 'Available network interfaces:\n'
+    ip -brief link
+    read -r -p 'AES67 interface [enp0s2]: ' iface || fail "Input cancelled."
+    iface=${iface:-enp0s2}
+    if [[ $network_explicit == false ]]; then
+        read -r -p 'Network mode (link-local/dhcp/existing) [link-local]: ' network || fail "Input cancelled."
+        network=${network:-link-local}
+    fi
+    read -r -p 'Unused return multicast IP [239.69.150.244]: ' group || fail "Input cancelled."
+    group=${group:-239.69.150.244}
 fi
-[[ $# == 2 ]] || { usage >&2; exit 2; }
-
-iface=$1
-group=$2
+case $network in link-local|dhcp|existing) ;; *) fail "Invalid network mode: $network" ;; esac
 [[ $iface =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,14}$ ]] || fail "Invalid interface name."
 [[ $group =~ ^239\.69\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]] ||
     fail "Expected a return multicast address in 239.69.0.0/16."
@@ -35,10 +61,13 @@ for cmd in ip ethtool ptp4l pmc pipewire; do
     command -v "$cmd" >/dev/null ||
         fail "Missing $cmd. On Ubuntu, install iproute2 ethtool linuxptp pipewire pipewire-bin."
 done
-addresses=$(ip -4 -o addr show dev "$iface" scope global) ||
-    fail "Could not query IPv4 addresses on $iface."
-[[ $addresses == *' inet '* ]] ||
-    fail "$iface needs an IPv4 address on the audio network."
+ip link show dev "$iface" >/dev/null || fail "Interface $iface does not exist. Check ip -brief link."
+[[ -d /sys/class/net/$iface/device && ! -d /sys/class/net/$iface/wireless ]] ||
+    fail "Select a physical wired interface."
+addresses=$(ip -4 -o addr show dev "$iface") || fail "Could not query IPv4 addresses."
+if [[ $network == existing && $addresses != *' inet '* ]]; then
+    fail "$iface needs an IPv4 address when using --network existing."
+fi
 caps=$(ethtool -T "$iface") || fail "Could not query timestamping on $iface."
 [[ $caps == *hardware-transmit* && $caps == *hardware-receive* &&
    $caps == *hardware-raw-clock* ]] ||
@@ -47,10 +76,60 @@ caps=$(ethtool -T "$iface") || fail "Could not query timestamping on $iface."
 clocks=(/sys/class/net/"$iface"/device/ptp/ptp[0-9]*)
 [[ ${#clocks[@]} == 1 && -e ${clocks[0]} ]] || fail "Cannot resolve a unique PTP hardware clock."
 phc="/dev/${clocks[0]##*/}"
-[[ -r $phc ]] || fail "Your desktop user cannot read $phc."
+# Grant only this desktop user read access, scoped to the selected PCI NIC.
+# Match the stable PCI parent rather than the boot-dependent ptpN number.
+command -v setfacl >/dev/null || fail "Missing setfacl. Run tools/install-aes67.sh first."
+command -v udevadm >/dev/null || fail "Missing udevadm. Run tools/install-aes67.sh first."
+pci=$(basename "$(readlink -f "/sys/class/net/$iface/device")")
+[[ $pci =~ ^[[:xdigit:]]{4}:[[:xdigit:]]{2}:[[:xdigit:]]{2}\.[0-7]$ ]] ||
+    fail "Cannot resolve the selected NIC PCI address for persistent PTP permissions."
+user_id=$(id -u)
+rule="/etc/udev/rules.d/90-defeedback-ptp-$pci-$user_id.rules"
+rule_tmp=$(mktemp)
+trap 'rm -f -- "$rule_tmp"' EXIT
+printf 'SUBSYSTEM=="ptp", KERNEL=="ptp[0-9]*", KERNELS=="%s", ACTION=="add|change", RUN+="/usr/bin/setfacl -m u:%s:r /dev/%%k"\n' "$pci" "$user_id" > "$rule_tmp"
+if ! cmp -s -- "$rule_tmp" "$rule"; then
+    sudo install -m 644 -- "$rule_tmp" "$rule"
+    sudo udevadm control --reload-rules
+fi
+# Apply immediately too; no logout, reboot, or device retrigger is required.
+sudo setfacl -m "u:$user_id:r" "$phc"
+rm -f -- "$rule_tmp"
+trap - EXIT
+[[ -r $phc ]] || fail "PTP read access could not be established for $phc."
+printf 'Persistent PTP read access configured for user %s on PCI device %s.\n' "$user_id" "$pci"
 
 base=/usr/share/pipewire/pipewire-aes67.conf
 [[ -r $base ]] || fail "PipeWire's packaged AES67 config is missing: $base"
+
+if [[ $network != existing ]]; then
+    command -v nmcli >/dev/null || fail "NetworkManager (nmcli) is required; use --network existing for another network manager."
+    profile="defeedback-aes67-$iface"
+    # Never overwrite an existing profile: fail rather than silently changing its settings.
+    profiles=$(nmcli -g connection.id connection show) || fail "Could not query NetworkManager."
+    if printf '%s\n' "$profiles" | grep -Fxq "$profile"; then
+        bound=$(nmcli -g connection.interface-name connection show "$profile")
+        method=$(nmcli -g ipv4.method connection show "$profile")
+        expected=link-local
+        [[ $network != dhcp ]] || expected=auto
+        [[ $bound == "$iface" && $method == "$expected" &&
+           $(nmcli -g ipv4.never-default connection show "$profile") == yes &&
+           -z $(nmcli -g ipv4.gateway connection show "$profile") &&
+           -z $(nmcli -g ipv4.dns connection show "$profile") ]] ||
+            fail "Existing profile $profile differs; review it in NetworkManager or use --network existing."
+    else
+        method=link-local
+        [[ $network != dhcp ]] || method=auto
+        sudo nmcli connection add type ethernet con-name "$profile" ifname "$iface" \
+            ipv4.method "$method" ipv4.never-default yes ipv4.ignore-auto-dns yes \
+            ipv6.method disabled connection.autoconnect yes
+    fi
+    printf 'Prepared %s (%s); activate after connecting the audio cable:\n' "$profile" "$network"
+    printf '  sudo nmcli connection up %q\n' "$profile"
+fi
+if [[ $addresses != *' inet '* ]]; then
+    printf 'No IPv4 address yet. Configuration can be prepared offline; connect the cable and activate the network profile before starting PTP/audio.\n'
+fi
 
 conf_dir="${XDG_CONFIG_HOME:-$HOME/.config}/defeedback"
 conf="$conf_dir/pipewire-aes67.conf"
