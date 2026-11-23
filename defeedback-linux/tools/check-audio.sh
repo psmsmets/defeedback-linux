@@ -61,5 +61,20 @@ if [[ ${2:-} == --launch ]]; then
     if [[ $transport == usb ]]; then
         exec "$reaper" --device "${1:-focusrite}"
     fi
+    # Refuse the raw launch unless the AES67 return and a received source exist.
+    if ! command -v pw-dump >/dev/null || ! command -v pw-jack >/dev/null; then
+        printf 'AES67 startup skipped: PipeWire tools are not installed.\n'
+        exit 0
+    fi
+    if ! pw-dump | python3 -c '
+import json, sys
+nodes = [item.get("info", {}).get("props", {}) for item in json.load(sys.stdin)]
+ready = any(p.get("node.name") == "defeedback-aes67-return" for p in nodes)
+ready = ready and any(p.get("device.api") == "aes67" and p.get("media.class") == "Audio/Source" for p in nodes)
+sys.exit(0 if ready else 1)
+'; then
+        printf 'AES67 startup skipped: no AES67 source and return available. Start PTP and the AES67 helper first.\n'
+        exit 0
+    fi
     exec env PIPEWIRE_QUANTUM=128/48000 pw-jack "$reaper" --raw
 fi

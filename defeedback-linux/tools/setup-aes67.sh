@@ -41,9 +41,12 @@ addresses=$(ip -4 -o addr show dev "$iface" scope global) ||
     fail "$iface needs an IPv4 address on the audio network."
 caps=$(ethtool -T "$iface") || fail "Could not query timestamping on $iface."
 [[ $caps == *hardware-transmit* && $caps == *hardware-receive* &&
-   $caps =~ PTP[[:space:]]Hardware[[:space:]]Clock:[[:space:]]+([0-9]+) ]] ||
+   $caps == *hardware-raw-clock* ]] ||
     fail "$iface needs hardware TX/RX timestamping and a PTP hardware clock."
-phc="/dev/ptp${BASH_REMATCH[1]}"
+# Resolve the clock through sysfs; ethtool output differs between versions.
+clocks=(/sys/class/net/"$iface"/device/ptp/ptp[0-9]*)
+[[ ${#clocks[@]} == 1 && -e ${clocks[0]} ]] || fail "Cannot resolve a unique PTP hardware clock."
+phc="/dev/${clocks[0]##*/}"
 [[ -r $phc ]] || fail "Your desktop user cannot read $phc."
 
 base=/usr/share/pipewire/pipewire-aes67.conf
@@ -67,8 +70,12 @@ awk -v iface="$iface" -v group="$group" '
     /^[[:space:]]*node\.name[[:space:]]*=[[:space:]]*"rtp-sink"/ {
         sub(/=.*/, "= \"defeedback-aes67-return\""); sink++
     }
+    /^[[:space:]]*audio\.channels[[:space:]]*=/ { sub(/=.*/, "= 8"); channels++ }
+    /^[[:space:]]*node\.channel-names[[:space:]]*=/ {
+        sub(/=.*/, "= [\"CH1\", \"CH2\", \"CH3\", \"CH4\", \"CH5\", \"CH6\", \"CH7\", \"CH8\"]"); names++
+    }
     { print }
-    END { if (clock != 1 || nic != 2 || dst != 1 || socket != 1 || sess != 1 || sink != 1) exit 1 }
+    END { if (clock != 1 || nic != 2 || dst != 1 || socket != 1 || sess != 1 || sink != 1 || channels != 1 || names != 1) exit 1 }
 ' "$base" > "$tmp" || fail "Unexpected layout in $base; no config was replaced."
 
 mv -- "$tmp" "$conf"

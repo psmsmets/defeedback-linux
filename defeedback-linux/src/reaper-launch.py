@@ -60,7 +60,7 @@ def select_card(cards, requested):
     elif any(card['family'] == 'focusrite' for card in cards):
         matches = [card for card in cards if card['family'] == 'focusrite']
     if not matches:
-        raise RuntimeError('No matching USB capture/playback device found. AES67 automatic startup is not configured yet.')
+        raise LookupError('No matching USB capture/playback device found. AES67 uses the explicit manual launcher.')
     if len(matches) != 1:
         names = ', '.join('hw:' + card['id'] for card in matches)
         raise RuntimeError('Multiple matching USB devices: ' + names + '. Select one with --device or DEFEEDBACK_DEVICE.')
@@ -127,6 +127,9 @@ def main():
     parser.add_argument('--channels', type=int, choices=(1, 2, 4, 5, 8),
                         default=os.environ.get('DEFEEDBACK_CHANNELS'), help='override the default path count')
     parser.add_argument('--detect', action='store_true', help='print the selected device and routing without launching')
+    parser.add_argument('--missing-audio', choices=('skip', 'error'),
+                        default=os.environ.get('DEFEEDBACK_MISSING_AUDIO', 'skip'),
+                        help='skip startup successfully (default) or report an error when USB audio is absent')
     parser.add_argument('--raw', action='store_true', help='launch with saved REAPER preferences and the supplied arguments')
     args, reaper_args = parser.parse_known_args()
     home = Path.home()
@@ -148,7 +151,14 @@ def main():
         while not cards and time.monotonic() < deadline:
             time.sleep(0.5)
             cards = detect_cards()
-        card = select_card(cards, args.device)
+        try:
+            card = select_card(cards, args.device)
+        except LookupError as error:
+            logging.warning('%s', error)
+            if args.missing_audio == 'skip' and not args.detect:
+                logging.info('REAPER startup skipped safely. Connect USB audio and launch again, or use the explicit AES67 test after PTP lock.')
+                return 0
+            raise RuntimeError(str(error)) from error
         count, first_input = routing(card, args.channels)
         logging.info('Selected hw:%s (%s), %s mono paths, inputs %s–%s to outputs 1–%s; 48000 Hz, 24-bit, 64 samples, 3 periods.',
                      card['id'], card['family'], count, first_input, first_input + count - 1, count)
