@@ -6,6 +6,7 @@ Run the commands from the top level of the Linux bundle.
 | --- | --- |
 | `download-resources.sh` | Downloads or identifies resources. Writes to the selected package directory. |
 | `setup-defeedback.sh` | Installs the audio workstation for the current Ubuntu Studio user. |
+| `update-defeedback.sh` | Updates REAPER and the hardware-aware launcher/template resources; supports version checks and local archives. |
 | `config/` | Download URLs, filenames, checksums where available, and Ubuntu package lists. |
 | `src/` | Build and launch scripts, plus the REAPER routing action. Setup installs the launchers and routing action. |
 | `tools/` | Audio checks, GUI tests, optional appliance setup and optional AES67 setup. |
@@ -19,7 +20,7 @@ On a connected machine with Bash and curl, run:
 bash download-resources.sh
 ```
 
-The script reads [the resource manifest](../config/resources.conf) and collects the pinned REAPER archive, the matching yabridge development archives, and the patched Wine source. The REAPER archive is checked against its published SHA-256. The yabridge and Wine entries follow their respective branches. For repeatable deployments, keep the collected files or update the manifest to fixed artifact URLs and hashes. `--config FILE` selects a different manifest, `--output DIR` changes the package directory, and `--only RESOURCE` selects a single entry. Each line uses `resource|kind|name|https-url|sha256`. Use `-` when an upstream checksum is unavailable. A `file` entry can also point to a repository ZIP or another direct artifact you have access to.
+The script reads [the resource manifest](../defeedback-linux/config/resources.conf) and collects the pinned REAPER archive, the matching yabridge development archives, and the patched Wine source. The REAPER archive is checked against its published SHA-256. The yabridge and Wine entries follow their respective branches. For repeatable deployments, keep the collected files or update the manifest to fixed artifact URLs and hashes. `--config FILE` selects a different manifest, `--output DIR` changes the package directory, and `--only RESOURCE` selects a single entry. Each line uses `resource|kind|name|https-url|sha256`. Use `-` when an upstream checksum is unavailable. A `file` entry can also point to a repository ZIP or another direct artifact you have access to.
 
 Download the Windows De-Feedback installer and optional VSTHost x64 archive manually in your browser. On the Alpha Labs download page, read the terms, privacy policy, and FAQs. Check the three acknowledgements yourself to enable the download. Pass `--open-manual` to the downloader to open the page in your default browser. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/)
 
@@ -29,7 +30,7 @@ Place the Windows installer at `packages/DefeedbackSetup.exe`. The installer als
 
 Edit `config/resources.conf` to change the defaults for downloads and new installations. For REAPER, update the Linux x86-64 archive name, URL, and published SHA-256 together. For Wine, select a source tarball from the patched fork. A commit archive and SHA-256 pin it to an exact revision. To pin yabridge, replace its `nightly` entry with one or two `file` entries under the resource name `yabridge`. Use a combined archive containing `yabridgectl` or a bridge and control archive from the same build. Keep the upstream archive names so setup can find and match them.
 
-Prepare updated versions in an empty package directory to avoid mixing old and new archives. Pass that directory to setup as its positional argument. Setup reuses existing REAPER, yabridge, and Wine installations and cached Wine source. The manifest changes the inputs for a fresh install or build.
+Prepare updated versions in an empty package directory to avoid mixing old and new archives. Pass that directory to setup as its positional argument. Setup reuses existing REAPER, yabridge, and Wine installations and cached Wine source. The manifest changes the inputs for a fresh install or build. Use `bash update-defeedback.sh` for an existing workstation, or `bash update-defeedback.sh --pinned` to apply the selected manifest REAPER version. See [workstation updates](setup.md#update-the-workstation) and [optional application cleanup](setup.md#remove-optional-applications).
 
 ## Transfer to a disconnected target
 
@@ -61,11 +62,11 @@ Offline setup uses the prepared local archives and can build Wine from the local
 
 | Area | Changes |
 | --- | --- |
-| Ubuntu packages | Uses `sudo` to install the runtime packages from [the APT package list](../config/apt-packages.conf). A new Wine build also installs the build group. |
+| Ubuntu packages | Uses `sudo` to install the runtime packages from [the APT package list](../defeedback-linux/config/apt-packages.conf). A new Wine build also installs the build group. |
 | REAPER | Installs to `~/.local/opt/REAPER` and keeps any existing audio preferences. |
 | Patched Wine | Builds or reuses `~/.local/opt/defeedback-wine-dcomp/runtime`. The Wine source and build logs stay on the machine. |
 | De-Feedback and yabridge | Updates `~/.wine-defeedback`, installs the plugin when needed, and registers it with yabridge. The bridge lives in `~/.local/share/yabridge` and creates wrappers under `~/.vst3/yabridge`. |
 | Launchers and routing | Installs launchers and the routing action under `~/.local/share/defeedback`, links commands in `~/.local/bin`, and creates application menu and desktop entries. Setup adds `~/.local/bin` to the shell startup file if needed. VSTHost is installed when its local folder is present. |
 | Existing appliance service | Migrates an existing De-Feedback REAPER service to the current launcher when needed. |
-| Optional `--appliance` | Configures SDDM autologin, the systemd user service for REAPER, Plasma desktop and power settings, system sleep and power-button behavior, and disables ModemManager and CUPS. See [workstation startup](../README.md#dedicated-workstation-startup). |
-| Optional AES67 | `tools/setup-aes67.sh` prepares the PipeWire AES67 configuration. See [the separate AES67 test](../README.md#optional-aes67-test-with-pipewire). |
+| Optional `--appliance` | Configures SDDM autologin, the systemd user service for REAPER, Plasma desktop and power settings, system sleep and power-button behavior, and disables ModemManager and CUPS. See [workstation startup](setup.md#dedicated-workstation-startup). |
+| Optional AES67 | `tools/setup-aes67.sh` prepares the PipeWire AES67 configuration. See [the separate AES67 test](setup.md#optional-aes67-test-with-pipewire). |

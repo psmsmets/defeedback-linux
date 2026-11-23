@@ -24,6 +24,8 @@ fi
 printf '%s\n' "$profile"
 if [[ ${1:-focusrite} == focusrite ]]; then
     printf 'Select the Scarlett in REAPER with ALSA. Use 48000 Hz, 64 samples, 24-bit, 3 periods, and RT priority 50.\n'
+elif [[ ${1:-focusrite} == cq ]]; then
+    printf 'Select the CQ for ALSA capture and playback in REAPER. CQ12T uses hw:CQ12T. Use 48000 Hz, 64 samples, 24-bit, and 3 periods. Confirm the device identifier on other CQ models.\n'
 elif [[ $transport == usb ]]; then
     printf 'Select this USB interface for ALSA capture and playback in REAPER. Start at 48 kHz and 128 samples.\n'
 else
@@ -57,7 +59,7 @@ if [[ ${2:-} == --launch ]]; then
         exit 1
     fi
     if [[ $transport == usb ]]; then
-        exec "$reaper"
+        exec "$reaper" --device "${1:-focusrite}"
     fi
-    exec env PIPEWIRE_QUANTUM=128/48000 pw-jack "$reaper"
+    exec env PIPEWIRE_QUANTUM=128/48000 pw-jack "$reaper" --raw
 fi

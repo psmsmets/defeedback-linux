@@ -57,11 +57,46 @@ offline=false
 while [[ ${1:-} == -* ]]; do
     case $1 in
         --help|-h)
-            printf '%s\n' "$usage"
-            printf '%s\n' 'By default, setup opens the official installer through Wine for a new plugin installation.' \
-                '--offline uses local resources and APT archives prepared for this Ubuntu release.' \
-                '--import-vst3 uses a Windows VST3 you already extracted with the official installer.' \
-                '--appliance configures automatic login, REAPER autostart, and dedicated workstation settings.'
+            printf '%s\n\n' "$usage"
+            cat <<'EOF'
+Install native Linux REAPER and configure yabridge and patched Wine to load
+the Windows De-Feedback VST3. Run from a desktop terminal on Ubuntu Studio
+(x86-64) as your regular user. Close REAPER and VSTHost first.
+
+Default installation
+  Place the official Windows installer, DefeedbackSetup.exe, in packages/.
+  For a new plugin installation, setup opens that installer through Wine.
+  Setup can fetch missing REAPER, yabridge, Wine, and APT resources online.
+
+Options
+  -h, --help       Show this help and exit.
+  --offline        Use prepared local resources and APT archives. Prepare
+                   them with 'bash download-resources.sh --apt' on a
+                   connected machine running the same Ubuntu release.
+                   Supply the De-Feedback installer separately.
+  --import-vst3    Import Defeedback.vst3 from the package directory for a
+                   new plugin installation. Extract it beforehand using
+                   the official Windows installer.
+  --appliance      Configure the workstation for dedicated use, including
+                   automatic login, REAPER autostart, and power settings.
+                   Run as the user who should log in automatically.
+
+Package directory
+  The optional packages-directory argument points to an existing directory
+  containing the installer and any prepared archives. It defaults to the
+  packages/ directory next to this script. Put options before the directory.
+
+Logs
+  Each installation run saves a timestamped log under
+  ${XDG_STATE_HOME:-$HOME/.local/state}/defeedback/logs/.
+  The terminal prints the exact path.
+
+Examples
+  bash setup-defeedback.sh
+  bash setup-defeedback.sh --offline /path/to/prepared-packages
+  bash setup-defeedback.sh --import-vst3 /path/to/packages
+  bash setup-defeedback.sh --appliance
+EOF
             exit 0
             ;;
         --import-vst3) import_vst3=true ;;
@@ -80,6 +115,37 @@ command -v apt-get >/dev/null || fail 'This script requires APT on Ubuntu Studio
 if pgrep -u "$EUID" -ix reaper >/dev/null || pgrep -u "$EUID" -ix 'vsthost[.]exe' >/dev/null; then
     fail 'Close REAPER and VSTHost before running setup.'
 fi
+
+log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/defeedback/logs"
+mkdir -p -- "$log_dir"
+setup_log=$(mktemp "$log_dir/setup-$(date +%Y%m%d-%H%M%S)-log.XXXXXX")
+color=
+reset=
+if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then
+    color=$'\e[1;36m'
+    reset=$'\e[0m'
+fi
+exec 8>&1
+exec > >(tee -a -- "$setup_log" >&8 8>&-) 2>&1
+log_pid=$!
+
+finish_setup() {
+    local status=$1
+    if (( status == 0 )); then
+        printf '\nSetup finished. Log: %s\n' "$setup_log"
+    else
+        printf '\nSetup exited with status %s. See log: %s\n' "$status" "$setup_log"
+    fi
+    exec 1>&8 2>&8 8>&-
+    wait "$log_pid" || printf 'Warning: Could not finish writing the setup log.\n' >&2
+}
+trap 'finish_setup "$?"' EXIT
+
+stage() {
+    printf '\n%s== %s ==%s\n' "$color" "$1" "$reset"
+}
+
+printf 'Setup log: %s\n' "$setup_log"
 
 # Resolve the bundled packages relative to this script, regardless of where it was started.
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
@@ -110,9 +176,9 @@ cleanup() {
         rm -rf -- "$wine_work_dir"
     fi
 }
-trap cleanup EXIT
+trap 'status=$?; cleanup || true; finish_setup "$status"' EXIT
 
-printf '\n== Ubuntu packages ==\n'
+stage 'Ubuntu packages'
 # PipeWire supplies the JACK interface for AES67.
 install_apt_group runtime "$package_dir" "$offline"
 
@@ -121,7 +187,7 @@ if [[ $desktop_dir != /* || $desktop_dir == "$HOME" ]]; then
     desktop_dir="$HOME/Desktop"
 fi
 
-printf '\n== Patched Wine ==\n'
+stage 'Patched Wine'
 bash "$bundle_dir/src/install-patched-wine.sh" "$package_dir" "$offline" 9>&-
 # Keep the system Wine available outside this setup and the installed launchers.
 unset WINEARCH WINEPREFIX WINEDLLOVERRIDES
@@ -131,7 +197,7 @@ export PATH="$wine_bin:$PATH"
 # Reuse installed REAPER. Otherwise prefer a local archive over the pinned download.
 if [[ ! -x $reaper_dir/reaper ]]; then
     [[ ! -e $reaper_dir ]] || fail "Check the existing REAPER directory: $reaper_dir"
-    printf '\n== Installing REAPER ==\n'
+    stage 'Installing REAPER'
     # With nullglob enabled, a missing archive leaves the array empty.
     shopt -s nullglob
     reaper_archives=("$package_dir"/reaper*_linux_x86_64.tar.xz)
@@ -178,7 +244,7 @@ fi
 # Prefer an extracted local build, then local archives, then a development build.
 if [[ ! -x $yabridge_dir/yabridgectl ]]; then
     [[ ! -e $yabridge_dir ]] || fail "Check the existing yabridge directory: $yabridge_dir"
-    printf '\n== Installing yabridge ==\n'
+    stage 'Installing yabridge'
     if [[ -x $package_dir/yabridge/yabridgectl ]]; then
         cp -a -- "$package_dir/yabridge" "$work_dir/yabridge"
     else
@@ -224,7 +290,7 @@ if [[ ! -x $yabridge_dir/yabridgectl ]]; then
 fi
 link_command "$yabridge_dir/yabridgectl"
 
-printf '\n== Installing and registering De-Feedback ==\n'
+stage 'Installing and registering De-Feedback'
 # Use a dedicated Wine prefix (Windows environment) for the plugin. Close the
 # lock descriptor in Wine commands so background processes cannot retain it.
 if [[ $offline == true ]]; then
@@ -296,8 +362,12 @@ for host in "$yabridge_dir"/yabridge-host*.exe; do
         /v HideWineVersion /t REG_SZ /d Y /f 9>&-
 done
 
-printf '\n== Launchers and REAPER profiles ==\n'
+stage 'Launchers and REAPER profiles'
 install -Dm 755 -- "$bundle_dir/src/reaper" "$app_dir/bin/reaper"
+install -Dm 644 -- "$bundle_dir/src/reaper-launch.py" "$app_dir/bin/reaper-launch.py"
+for project_file in defeedback-2ch.RPP create-template.lua reaper-cq12t.ini reaper-evo8.ini; do
+    install -Dm 644 -- "$bundle_dir/projects/$project_file" "$app_dir/projects/$project_file"
+done
 link_command "$app_dir/bin/reaper" "$reaper_dir/reaper"
 install_launcher reaper REAPER "$app_dir/bin/reaper" 'Digital audio workstation'
 
@@ -323,10 +393,16 @@ fi
 # REAPER loads ReaScripts from its Actions window. Preserve its existing device preferences.
 install -Dm 644 -- "$bundle_dir/src/defeedback-routing.lua" "$app_dir/defeedback-routing.lua"
 
+if command -v wpctl >/dev/null && wpctl set-volume @DEFAULT_AUDIO_SINK@ 100%; then
+    printf '\nSystem output volume set to 100%%.\n'
+else
+    printf '\nWarning: Could not set the default system output volume to 100%%.\n' >&2
+fi
+
 printf '\nOpen REAPER from the desktop, applications menu, or run reaper in a new terminal.\n'
-printf '%s\n' 'For the Scarlett, select ALSA in Options > Preferences > Audio > Device.' \
-    'Select the Scarlett for input and output. Use 48000 Hz, 64 samples, 24-bit, 3 periods, and RT priority 50.' \
-    'Scan ~/.vst3 and load defeedback-routing.lua in REAPER Actions to create a Solo, Duo, or Quad project.'
+printf '%s\n' 'The launcher detects supported USB devices and applies 48000 Hz, 64 samples, 24-bit, and 3 periods.' \
+    'It creates the mono routing project on first launch and reopens it on later launches.' \
+    'Run reaper --detect to inspect device selection. If De-Feedback is missing, scan ~/.vst3 in REAPER.'
 
 if [[ $appliance == true ]]; then
     bash "$bundle_dir/tools/setup-appliance.sh"
