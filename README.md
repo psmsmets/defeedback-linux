@@ -6,6 +6,8 @@ Products and licensing: [REAPER](https://www.reaper.fm/purchase.php) · [Alpha L
 
 Run the Windows De-Feedback VST3 on Ubuntu Studio with native Linux REAPER using yabridge and patched Wine. The hardware-aware launcher selects a supported USB device and opens its mono routing project.
 
+This project grew out of a personal preference for Linux and difficulty obtaining a Windows 11 IoT Enterprise LTSC license. I would rather put that budget toward a REAPER license and explore running De-Feedback on Linux. This is an independent compatibility experiment, with test results and remaining limitations documented here.
+
 - [Documentation](docs/README.md)
 - [Workstation command](docs/commands.md)
 - [Setup and operation](docs/setup.md)
