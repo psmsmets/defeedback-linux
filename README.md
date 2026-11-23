@@ -13,8 +13,6 @@ This project grew out of a personal preference for Linux and difficulty obtainin
 - [Setup and operation](docs/setup.md)
 - [Code and installation bundle](defeedback-linux/)
 
-Use Focusrite Scarlett over USB for setup and initial audio tests. SQ and CQ USB profiles and Avantis and dLive AES67 profiles are available as explicit choices.
+See [test hardware and measurements](docs/overview.md) for validated configurations.
 
-See [test hardware and measurements](docs/overview.md) for validated configurations. The software limit is eight mono paths; eight-path audio and AES67 remain unvalidated.
-
-After installation, run `defeedback-linux` to start audio and `defeedback-linux --help` for updates, licensing, AES67, and diagnostics.
+After installation, run `defeedback-linux` to start REAPER with the detected audio device. Use `defeedback-linux --help` for all available commands.
