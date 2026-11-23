@@ -390,9 +390,6 @@ else
     printf '%s\n' 'VSTHost package not found. To install its launcher, add the full package to packages/vsthostx64 and rerun setup.'
 fi
 
-# REAPER loads ReaScripts from its Actions window. Preserve its existing device preferences.
-install -Dm 644 -- "$bundle_dir/src/defeedback-routing.lua" "$app_dir/defeedback-routing.lua"
-
 if command -v wpctl >/dev/null && wpctl set-volume @DEFAULT_AUDIO_SINK@ 100%; then
     printf '\nSystem output volume set to 100%%.\n'
 else

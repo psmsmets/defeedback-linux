@@ -3,3 +3,6 @@
 /defeedback-linux/packages/
 *.iso
 /logs/
+
+# macOS metadata sidecars
+._*

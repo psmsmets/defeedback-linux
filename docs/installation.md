@@ -8,8 +8,9 @@ Run the commands from the top level of the Linux bundle.
 | `setup-defeedback.sh` | Installs the audio workstation for the current Ubuntu Studio user. |
 | `update-defeedback.sh` | Updates REAPER and the hardware-aware launcher/template resources; supports version checks and local archives. |
 | `config/` | Download URLs, filenames, checksums where available, and Ubuntu package lists. |
-| `src/` | Build and launch scripts, plus the REAPER routing action. Setup installs the launchers and routing action. |
-| `tools/` | Audio checks, GUI tests, optional appliance setup and optional AES67 setup. |
+| `src/` | Build and launch scripts. |
+| `projects/` | Mono template generator, source plugin state, and generic audio preference seeds. |
+| `tools/` | Audio diagnostics, workstation cleanup, appliance setup, and AES67 installation/setup. |
 | `packages/` | Local downloads and user-supplied files. Git ignores this directory. |
 
 ## Prepare resources
@@ -24,7 +25,7 @@ The script reads [the resource manifest](../defeedback-linux/config/resources.co
 
 Download the Windows De-Feedback installer and optional VSTHost x64 archive manually in your browser. On the Alpha Labs download page, read the terms, privacy policy, and FAQs. Check the three acknowledgements yourself to enable the download. Pass `--open-manual` to the downloader to open the page in your default browser. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/)
 
-Place the Windows installer at `packages/DefeedbackSetup.exe`. The installer also presents the license terms during setup. For private use with the supplied edition, place its complete folder in `packages/vsthostx64/`, including the executable, license and Data folder. See [Alpha Labs downloads and terms](https://alphalabsaudio.com/defeedback/) and the [REAPER distribution agreement](https://www.reaper.fm/dist-agreement.php). Direct downloads from upstream to a user's own package directory are separate from distributing copies in a customer bundle. Before supplying a bundle to others, check each component's distribution terms, including any source obligations for open-source binaries.
+Place the Windows installer at `packages/DefeedbackSetup.exe`. The installer also presents the license terms during setup. For private use with the supplied edition, place its complete folder in `packages/vsthostx64/`, including the executable, license and Data folder. See [Alpha Labs downloads and terms](https://alphalabsaudio.com/defeedback/) and the [REAPER distribution agreement](https://www.reaper.fm/dist-agreement.php). Keep vendor installers local and retain their license files.
 
 ## Change the selected versions
 
@@ -33,15 +34,6 @@ Edit `config/resources.conf` to change the defaults for downloads and new instal
 Prepare updated versions in an empty package directory to avoid mixing old and new archives. Pass that directory to setup as its positional argument. Setup reuses existing REAPER, yabridge, and Wine installations and cached Wine source. The manifest changes the inputs for a fresh install or build. Use `bash update-defeedback.sh` for an existing workstation, or `bash update-defeedback.sh --pinned` to apply the selected manifest REAPER version. See [workstation updates](setup.md#update-the-workstation) and [optional application cleanup](setup.md#remove-optional-applications).
 
 ## Transfer to a disconnected target
-
-```mermaid
-flowchart LR
-    Config["Download manifest"] --> Prepare["Prepare on connected Ubuntu"]
-    Vendor["Vendor files supplied by user"] --> Bundle["Local package bundle"]
-    Prepare --> Bundle
-    Bundle --> USB["Transfer by USB"]
-    USB --> Setup["Run offline setup"]
-```
 
 On a connected **Ubuntu amd64** machine with the same Ubuntu release and compatible package sources as the target, refresh the APT indexes and run:
 
@@ -66,7 +58,7 @@ Offline setup uses the prepared local archives and can build Wine from the local
 | REAPER | Installs to `~/.local/opt/REAPER` and keeps any existing audio preferences. |
 | Patched Wine | Builds or reuses `~/.local/opt/defeedback-wine-dcomp/runtime`. The Wine source and build logs stay on the machine. |
 | De-Feedback and yabridge | Updates `~/.wine-defeedback`, installs the plugin when needed, and registers it with yabridge. The bridge lives in `~/.local/share/yabridge` and creates wrappers under `~/.vst3/yabridge`. |
-| Launchers and routing | Installs launchers and the routing action under `~/.local/share/defeedback`, links commands in `~/.local/bin`, and creates application menu and desktop entries. Setup adds `~/.local/bin` to the shell startup file if needed. VSTHost is installed when its local folder is present. |
+| Launchers and routing | Installs launchers and mono template resources under `~/.local/share/defeedback`, links commands in `~/.local/bin`, and creates application menu and desktop entries. Setup adds `~/.local/bin` to the shell startup file if needed. VSTHost is installed when its local folder is present. |
 | Existing appliance service | Migrates an existing De-Feedback REAPER service to the current launcher when needed. |
 | Optional `--appliance` | Configures SDDM autologin, the systemd user service for REAPER, Plasma desktop and power settings, system sleep and power-button behavior, and disables ModemManager and CUPS. See [workstation startup](setup.md#dedicated-workstation-startup). |
-| Optional AES67 | `tools/setup-aes67.sh` prepares the PipeWire AES67 configuration. See [the separate AES67 test](setup.md#optional-aes67-test-with-pipewire). |
+| Optional AES67 | Run `tools/install-aes67.sh`, then `tools/setup-aes67.sh` for network, PTP access, and PipeWire configuration. See [AES67 setup](aes67.md). |
