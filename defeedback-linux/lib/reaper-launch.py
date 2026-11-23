@@ -13,6 +13,9 @@ import sys
 import tempfile
 import time
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+from session_log import Session, audio_health, debug_snapshot, run_logged
+
 
 def detect_cards(asound=Path('/proc/asound')):
     cards = []
@@ -135,6 +138,8 @@ def prepare_ini(path, seed, card):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--debug', action='store_true', default=os.environ.get('DEFEEDBACK_DEBUG') == '1',
+                        help='extra text diagnostics without recording audio')
     parser.add_argument('--device', default=os.environ.get('DEFEEDBACK_DEVICE', 'auto'),
                         help='auto, focusrite, evo8, behringer, cq, sq, qu, or an exact ALSA card ID')
     parser.add_argument('--channels', type=int, choices=(1, 2, 4, 5, 8),
@@ -172,61 +177,72 @@ def main():
     app = home / '.local/share/defeedback'
     state = Path(os.environ.get('XDG_STATE_HOME', home / '.local/state')) / 'defeedback'
     state.mkdir(parents=True, exist_ok=True)
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s',
-                        handlers=[logging.StreamHandler(), logging.FileHandler(state / 'reaper-launch.log')])
-    with open(state / 'reaper.lock', 'w') as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            logging.info('De-Feedback REAPER is already running.')
-            return 0
-        environment = os.environ.copy()
-        if not args.raw:
-            deadline = time.monotonic() + (0 if args.detect else 10)
-            cards = detect_cards()
-            while not cards and time.monotonic() < deadline:
-                time.sleep(0.5)
-                cards = detect_cards()
+    with Session('reaper', args.debug) as session:
+        logger = session.logger
+        with open(state / 'reaper.lock', 'w') as lock:
             try:
-                card = select_card(cards, args.device)
-            except LookupError as error:
-                logging.warning('%s', error)
-                if args.missing_audio == 'skip' and not args.detect:
-                    logging.info('REAPER startup skipped safely. Connect USB audio and launch again, or use the explicit AES67 test after PTP lock.')
-                    return 0
-                raise RuntimeError(str(error)) from error
-            count, first_input = routing(card, args.channels)
-            logging.info('Selected hw:%s (%s), %s mono paths, inputs %s–%s to outputs 1–%s; 48000 Hz, 24-bit, 64 samples, 3 periods.',
-                         card['id'], card['family'], count, first_input, first_input + count - 1, count)
-            if args.detect:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                logger.info('De-Feedback REAPER is already running.')
                 return 0
-            resource = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'REAPER'
-            source = app / 'reaper'
-            seed = resource / 'reaper.ini'
-            safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', card['id'])
-            ini = resource / ('reaper-defeedback-' + safe_id + '.ini')
-            prepare_ini(ini, seed, card)
-            if not reaper_args:
-                project = state / ('defeedback-' + safe_id + '-' + str(count) + 'ch.RPP')
-                environment.update(DEFEEDBACK_TEMPLATE_PROFILE='automatic',
-                                   DEFEEDBACK_TEMPLATE_CHANNELS=str(count),
-                                   DEFEEDBACK_TEMPLATE_FIRST_INPUT=str(first_input),
-                                   DEFEEDBACK_TEMPLATE_OUTPUT=str(project))
-                reaper_args = ['-new', str(source / 'create-template.lua')]
-            reaper_args = ['-newinst', '-cfgfile', str(ini)] + reaper_args
-        wine = home / '.local/opt/defeedback-wine-dcomp/runtime/bin'
-        executable = home / '.local/opt/REAPER/reaper'
-        if not all(path.is_file() and os.access(path, os.X_OK)
-                   for path in (wine / 'wine', wine / 'wineserver', executable)):
-            raise RuntimeError('Patched Wine or REAPER is missing. Run setup-defeedback.sh first.')
-        for key in ('WINEPREFIX', 'WINEARCH', 'WINEDLLOVERRIDES'):
-            environment.pop(key, None)
-        environment.update(WINELOADER=str(wine / 'wine'), WINESERVER=str(wine / 'wineserver'),
-                           PATH=str(wine) + os.pathsep + environment.get('PATH', ''))
-        child = subprocess.Popen([str(executable)] + reaper_args, env=environment)
-        for number in (signal.SIGTERM, signal.SIGINT):
-            signal.signal(number, lambda signum, frame: child.send_signal(signum))
-        return child.wait()
+            environment = os.environ.copy()
+            selected_id = None
+            if args.debug:
+                debug_snapshot(session)
+            if not args.raw:
+                deadline = time.monotonic() + (0 if args.detect else 10)
+                cards = detect_cards()
+                while not cards and time.monotonic() < deadline:
+                    time.sleep(0.5)
+                    cards = detect_cards()
+                try:
+                    card = select_card(cards, args.device)
+                except LookupError as error:
+                    logger.warning('%s', error)
+                    if args.missing_audio == 'skip' and not args.detect:
+                        logger.info('REAPER startup skipped safely. Connect USB audio and launch again, or use the explicit AES67 test after PTP lock.')
+                        return 0
+                    raise RuntimeError(str(error)) from error
+                selected_id = card['id']
+                count, first_input = routing(card, args.channels)
+                logger.info('Selected hw:%s (%s), %s mono paths, inputs %s–%s to outputs 1–%s; 48000 Hz, 24-bit, 64 samples, 3 periods.',
+                             card['id'], card['family'], count, first_input, first_input + count - 1, count)
+                if args.detect:
+                    return 0
+                resource = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'REAPER'
+                source = app / 'reaper'
+                seed = resource / 'reaper.ini'
+                safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', card['id'])
+                ini = resource / ('reaper-defeedback-' + safe_id + '.ini')
+                prepare_ini(ini, seed, card)
+                if not reaper_args:
+                    project = state / ('defeedback-' + safe_id + '-' + str(count) + 'ch.RPP')
+                    environment.update(DEFEEDBACK_TEMPLATE_PROFILE='automatic',
+                                       DEFEEDBACK_TEMPLATE_CHANNELS=str(count),
+                                       DEFEEDBACK_TEMPLATE_FIRST_INPUT=str(first_input),
+                                       DEFEEDBACK_TEMPLATE_OUTPUT=str(project),
+                                       DEFEEDBACK_TEMPLATE_LOG=str(state / 'logs' / ('template-' + safe_id + '-' + str(count) + 'ch.log')))
+                    reaper_args = ['-new', str(source / 'create-template.lua')]
+                reaper_args = ['-newinst', '-cfgfile', str(ini)] + reaper_args
+            wine = home / '.local/opt/defeedback-wine-dcomp/runtime/bin'
+            executable = home / '.local/opt/REAPER/reaper'
+            if not all(path.is_file() and os.access(path, os.X_OK)
+                       for path in (wine / 'wine', wine / 'wineserver', executable)):
+                raise RuntimeError('Patched Wine or REAPER is missing. Run setup-defeedback.sh first.')
+            for key in ('WINEPREFIX', 'WINEARCH', 'WINEDLLOVERRIDES'):
+                environment.pop(key, None)
+            environment.update(WINELOADER=str(wine / 'wine'), WINESERVER=str(wine / 'wineserver'),
+                               PATH=str(wine) + os.pathsep + environment.get('PATH', ''))
+            logger.info('LAUNCH transport=%s executable=%s project=%s',
+                        environment.get('DEFEEDBACK_TRANSPORT', 'manual' if args.raw else 'usb'),
+                        executable, environment.get('DEFEEDBACK_TEMPLATE_OUTPUT', 'explicit/saved'))
+            environment.setdefault('WINEDEBUG', '-all,err+all')
+            if args.debug:
+                environment['WINEDEBUG'] = '+timestamp,+pid,+tid,err+all,warn+all'
+                environment['PIPEWIRE_DEBUG'] = '3'
+                logger.debug('REAPER arguments=%s', reaper_args)
+            return run_logged([str(executable)] + reaper_args, session, environment,
+                              health=audio_health(selected_id, environment.get('DEFEEDBACK_TRANSPORT') == 'aes67'))
 
 
 if __name__ == '__main__':

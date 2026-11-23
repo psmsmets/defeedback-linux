@@ -8,11 +8,13 @@ fail() {
 }
 
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
-    printf '%s\n' 'Usage: bash setup-appliance.sh' \
+    printf '%s\n' 'Usage: defeedback-linux appliance setup' \
+        'Enables desktop autologin, REAPER autostart, and appliance power settings.' \
+        'USB settings load at launch. AES67 startup remains manual.' \
         'Run as the account that should log in automatically, from its Ubuntu Studio Plasma desktop.'
     exit 0
 fi
-[[ $# -eq 0 ]] || fail 'Usage: bash setup-appliance.sh'
+[[ $# -eq 0 ]] || fail 'Usage: defeedback-linux appliance setup'
 [[ $(uname -s) == Linux && $EUID -ne 0 ]] || fail 'Run as your desktop user on Ubuntu Studio.'
 [[ ${XDG_CURRENT_DESKTOP:-} == *KDE* ]] || fail 'Run from the target user’s Plasma desktop session.'
 [[ -x $HOME/.local/share/defeedback/bin/reaper ]] || fail 'Install REAPER with setup-defeedback.sh first.'

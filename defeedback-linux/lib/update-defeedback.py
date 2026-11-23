@@ -23,6 +23,9 @@ BUNDLE = Path(__file__).resolve().parent.parent
 RESOURCES = {
     'defeedback-linux': 'bin/defeedback-linux',
     'lib/cli.py': 'lib/cli.py',
+    'lib/session_log.py': 'lib/session_log.py',
+    'lib/log_commands.py': 'lib/log_commands.py',
+    'lib/aes67_runtime.py': 'lib/aes67_runtime.py',
     'lib/open-license-gui.sh': 'lib/open-license-gui.sh',
     'config/resources.conf': 'config/resources.conf',
     'lib/reaper': 'bin/reaper',

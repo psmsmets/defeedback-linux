@@ -10,14 +10,23 @@ import subprocess
 import sys
 import tempfile
 
+from session_log import Session, debug_snapshot, run_logged
+from log_commands import show_logs
+from aes67_runtime import start as start_aes67
+
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REPO = 'https://github.com/psmsmets/defeedback-linux.git'
 DEFAULT_BRANCH = 'main'
 
 
 def execute(command):
-    """Replace the dispatcher so signals and exit codes reach the actual command."""
-    os.execv(command[0], command)
+    """The launcher supervises REAPER; other tools get a bounded command session."""
+    if command[1].endswith('reaper-launch.py') or any(arg in ('--help', '-h') for arg in command[2:]):
+        os.execv(command[0], command)
+    with Session(Path(command[1]).stem, os.environ.get('DEFEEDBACK_DEBUG') == '1') as session:
+        if session.debug:
+            debug_snapshot(session)
+        return run_logged(command, session)
 
 
 def dispatch(name, arguments):
@@ -32,6 +41,7 @@ def dispatch(name, arguments):
         script = ROOT / 'tools' / {
             'check': 'check-audio.sh', 'diagnose': 'diagnose.sh',
             'aes67-install': 'install-aes67.sh', 'aes67-setup': 'setup-aes67.sh',
+            'appliance-setup': 'setup-appliance.sh', 'trim': 'trim-workstation.sh',
         }[name]
     return ['/bin/bash', str(script)] + arguments
 
@@ -54,7 +64,7 @@ def read_source(config):
     return value
 
 
-def update(arguments):
+def update(arguments, session=None):
     parser = argparse.ArgumentParser(prog='defeedback-linux update',
                                      description='Fetch project code and install workstation integration.')
     parser.add_argument('--check', action='store_true', help='fetch and compare without activating an update')
@@ -124,43 +134,61 @@ def update(arguments):
         if not updater.is_file():
             raise RuntimeError('Updated repository has no defeedback-linux/update-defeedback.sh.')
         command = ['/bin/bash', str(updater)] + ([] if args.reaper else ['--integration-only'])
-        subprocess.run(command, check=True)
+        if session is None:
+            subprocess.run(command, check=True)
+        elif run_logged(command, session) != 0:
+            raise RuntimeError('Integration update failed; see session log.')
+        if session:
+            session.logger.info('UPDATE installed target=%s reaper=%s', target, args.reaper)
         print('Project update completed. Wine, yabridge, and the plugin were not changed.')
     return 0
 
 
 def main(argv=None):
     arguments = list(sys.argv[1:] if argv is None else argv)
+    debug = '--debug' in arguments or os.environ.get('DEFEEDBACK_DEBUG') == '1'
+    arguments = [value for value in arguments if value != '--debug']
+    if debug:
+        os.environ['DEFEEDBACK_DEBUG'] = '1'
     parser = argparse.ArgumentParser(prog='defeedback-linux', description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. REAPER and De-Feedback require separate licenses; this project includes neither license.',
         epilog='Products and licensing: REAPER https://www.reaper.fm/purchase.php — De-Feedback https://www.alphalabsaudio.com/defeedback/ — Run a subcommand with --help for its options. Without a command, start REAPER.')
-    parser.add_argument('command', nargs='?', choices=('run', 'update', 'license-gui', 'aes67', 'check', 'diagnose', 'ini'),
-                        help='run REAPER, update code, open licensing, configure AES67, check audio, diagnose, or print INI')
+    parser.add_argument('--debug', action='store_true', help='extra text diagnostics; never records audio')
+    parser.add_argument('command', nargs='?', choices=('run', 'update', 'license-gui', 'aes67', 'appliance', 'trim', 'check', 'diagnose', 'ini', 'logs'),
+                        help='run REAPER, update code, open licensing, configure AES67 or appliance startup, trim applications, check audio, diagnose, read logs, or print INI')
     try:
         if not arguments or (arguments[0].startswith('-') and arguments[0] not in ('-h', '--help')):
-            execute(dispatch('run', arguments))
-            return 0
+            return execute(dispatch('run', arguments))
         if arguments[0] in ('-h', '--help'):
             parser.print_help()
             return 0
         command = arguments.pop(0)
-        if command not in ('run', 'update', 'license-gui', 'aes67', 'check', 'diagnose', 'ini'):
+        if command not in ('run', 'update', 'license-gui', 'aes67', 'appliance', 'trim', 'check', 'diagnose', 'ini', 'logs'):
             parser.error('unknown command: ' + command)
+        if command == 'logs':
+            return show_logs(arguments)
         if command == 'update':
-            return update(arguments)
-        if command == 'aes67':
-            aes = argparse.ArgumentParser(prog='defeedback-linux aes67', description='Install or configure optional AES67 audio.')
-            aes.add_argument('action', choices=('install', 'setup'))
+            if any(arg in ('--help', '-h') for arg in arguments):
+                return update(arguments)
+            with Session('update', debug) as session:
+                return update(arguments, session)
+        if command in ('aes67', 'appliance'):
+            actions = ('install', 'setup', 'ptp', 'audio') if command == 'aes67' else ('setup',)
+            description = ('Install or configure optional AES67 audio.' if command == 'aes67' else
+                           'Configure unattended desktop login, REAPER autostart, and power settings. Automatic AES67 startup is not implemented.')
+            aes = argparse.ArgumentParser(prog='defeedback-linux ' + command, description=description)
+            aes.add_argument('action', choices=actions)
             if not arguments or arguments[0] in ('-h', '--help'):
                 aes.print_help()
                 return 0 if arguments else 2
             action = arguments.pop(0)
-            if action not in ('install', 'setup'):
-                aes.error('choose install or setup')
-            command = 'aes67-' + action
-        execute(dispatch(command, arguments))
-        return 0
+            if action not in actions:
+                aes.error('choose ' + ' or '.join(actions))
+            if command == 'aes67' and action in ('ptp', 'audio'):
+                return start_aes67(action, arguments, debug)
+            command = command + '-' + action
+        return execute(dispatch(command, arguments))
     except KeyboardInterrupt:
         return 130
-    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as error:
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         print('Error: ' + str(error), file=sys.stderr)
         return 1

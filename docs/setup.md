@@ -62,7 +62,9 @@ The launcher uses `reaper/create-template.lua` to create a mono project for the 
 
 ## Dedicated workstation startup
 
-Run `bash setup-defeedback.sh --appliance` from the Ubuntu Studio Plasma desktop to install De-Feedback and configure startup. If REAPER is already installed, you can run `bash tools/setup-appliance.sh` on its own. Use the account that should log in automatically. Anyone with physical access can use this desktop after boot.
+The goal is headless operation with audio settings selected at boot for the connected USB interface or AES67 on the second NIC. USB selection is implemented; automatic AES67 startup remains planned. A graphical Plasma session is still required. Screenless boot and activation require target-hardware validation.
+
+Run `bash setup-defeedback.sh --appliance` from the Ubuntu Studio Plasma desktop to install De-Feedback and configure startup. If REAPER is already installed, run `defeedback-linux appliance setup` to configure it separately. Normal installation does not enable appliance settings. Use the account that should log in automatically. Anyone with physical access can use this desktop after boot.
 
 SDDM signs in to the current Plasma session type at boot. The systemd user service waits three seconds and calls the same hardware-aware launcher as the desktop shortcut. The launcher waits up to ten seconds for a recognized USB capture/playback device, selects its ALSA preferences, and creates or reopens its mono project. A graphical user session is still required for REAPER and the plugin; startup runs without interaction after automatic login. See [automatic USB startup](#automatic-usb-startup).
 
@@ -94,7 +96,7 @@ Wine's terminal output is saved in `${XDG_STATE_HOME:-$HOME/.local/state}/defeed
 
 After its initial environment checks, `setup-defeedback.sh` saves terminal output and errors to a timestamped `setup-*.log.*` under `${XDG_STATE_HOME:-$HOME/.local/state}/defeedback/logs/`. The terminal displays each installation stage and prints the log path on exit, including after an installation failure.
 
-From the setup bundle, run `defeedback-linux diagnose` to collect system information, USB topology, ALSA devices and stream parameters, PipeWire routing, and available USB kernel messages in a local `diagnostics-*.log.*` in the same directory. The terminal shows the result of each check and the full report path. Set `NO_COLOR=1` to turn off the script's terminal colors.
+Run `defeedback-linux diagnose` to collect system information, USB topology, ALSA devices and stream parameters, PipeWire routing, and available USB kernel messages in `diagnostics-*` under the central log directory. The terminal shows the result of each check and the full report path. Set `NO_COLOR=1` to turn off the script's terminal colors.
 
 For a direct SQ USB test, close REAPER and run `defeedback-linux diagnose --usb-card SQ`. Use the card ID shown in brackets in `/proc/asound/cards` for other devices. The optional tests open capture and playback separately at 48 kHz with two channels and 24-bit samples on the application side. Playback sends silence and capture is discarded. These tests verify stream access. Verify the physical signal and mixer patch separately. Review the report before sharing it, since it contains device names and system details.
 
@@ -125,7 +127,7 @@ On first launch, REAPER runs the template action without prompts and saves `~/.l
 
 Run `reaper --detect` to inspect the automatic device selection without starting REAPER. Use `reaper --device cq`, an exact ID such as `reaper --device hw:CQ12T`, or `reaper --channels 2` to override selection or channel count. `DEFEEDBACK_DEVICE` and `DEFEEDBACK_CHANNELS` provide the same overrides for desktop and service environments. Explicit REAPER arguments are forwarded after device configuration. `reaper --raw` bypasses automatic selection and uses saved REAPER preferences.
 
-Selection and launch errors are recorded in `~/.local/state/defeedback/reaper-launch.log`. Template generation and mono validation are recorded beside the generated project in its `.RPP.log` file. XDG configuration and state directory overrides are honored.
+Launcher events, REAPER output, and process status are saved as bounded session logs under `~/.local/state/defeedback/logs/`. Template/version/mono-validation messages use rotating `template-DEVICE-Nch.log` files there. Use `defeedback-linux logs --list` to find current and older logs. XDG configuration and state directory overrides are honored. See [logging](logging.md).
 
 With no matching USB device, the default `--missing-audio skip` logs the reason and exits successfully without starting REAPER. Use `--missing-audio error` or `DEFEEDBACK_MISSING_AUDIO=error` for an error exit instead. `--detect` reports missing devices as errors. Ambiguous devices and invalid routing remain errors. `--raw` bypasses automatic USB checks.
 
@@ -147,8 +149,8 @@ Updates use the same locks as setup and the REAPER launcher and require REAPER t
 Preview optional desktop and creative application removal:
 
 ```bash
-bash tools/trim-workstation.sh --check
-bash tools/trim-workstation.sh --apply
+defeedback-linux trim --check
+defeedback-linux trim --apply
 ```
 
 Add `--autoremove` to both commands to include unused automatic dependencies. The script saves the resolved plan under `~/.local/state/defeedback/logs/` and stops if protected desktop, audio, AES67, or system runtime packages would be removed. Review the plan before applying it. Personal documents are retained; Snap removal normally retains a recovery snapshot.

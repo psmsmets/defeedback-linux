@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'HELP'
-Usage: bash tools/diagnose.sh [--usb-card CARD_ID]
+Usage: defeedback-linux diagnose [--usb-card CARD_ID]
 
 Save a local report with system information, ALSA and USB device details,
 PipeWire routing, and recent USB audio kernel messages.
@@ -76,6 +76,10 @@ done
 
 check 'PipeWire devices and streams' wpctl status
 check 'PipeWire port connections' pw-link -l
+check 'REAPER user service' systemctl --user status defeedback-reaper.service --no-pager
+check 'recent REAPER and PipeWire journal' journalctl --user --no-pager -n 100 \
+    -u defeedback-reaper.service -u pipewire.service -u wireplumber.service
+check 'network interfaces' ip -brief address
 check 'recent USB audio kernel messages' journalctl -kb --no-pager -n 100 --grep='usb|snd_usb_audio'
 
 if [[ -n $card ]]; then

@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
 BUNDLE = Path(__file__).resolve().parents[1]
 
@@ -32,17 +34,26 @@ class Commands(unittest.TestCase):
                              (['diagnose', '--usb-card', 'SQ'], 'diagnose.sh'),
                              (['aes67', 'install'], 'install-aes67.sh'),
                              (['aes67', 'setup', '--quantum', '96'], 'setup-aes67.sh'),
+                             (['appliance', 'setup'], 'setup-appliance.sh'),
+                             (['trim', '--apply', '--autoremove'], 'trim-workstation.sh'),
                              (['ini', '--device', 'cq'], 'reaper-launch.py')]:
-            with self.subTest(args=args), patch.object(cli, 'execute') as execute:
+            with self.subTest(args=args), patch.object(cli, 'execute', return_value=0) as execute:
                 self.assertEqual(cli.main(args), 0)
                 command = execute.call_args.args[0]
                 self.assertTrue(command[1].endswith(suffix))
                 if args and args[0] == 'ini':
                     self.assertEqual(command[2:], ['--print-ini', '--device', 'cq'])
+                if args and args[0] == 'trim':
+                    self.assertEqual(command[2:], ['--apply', '--autoremove'])
                 if args and args[0] == 'check':
                     self.assertEqual(command[2:], ['avantis', '--launch'])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             cli.main(['unknown'])
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            cli.main(['appliance', 'install'])
+        with patch.object(cli, 'execute', return_value=0) as execute, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(['appliance', '--help']), 0)
+            execute.assert_not_called()
 
     def test_generated_ini_without_seed(self):
         with tempfile.TemporaryDirectory() as directory:

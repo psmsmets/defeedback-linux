@@ -5,7 +5,17 @@ local automatic = os.getenv("DEFEEDBACK_TEMPLATE_PROFILE") == "automatic"
 local function report(message)
     if automatic then
         local path = os.getenv("DEFEEDBACK_TEMPLATE_OUTPUT")
-        local log = path and io.open(path .. ".log", "a")
+        local log_path = os.getenv("DEFEEDBACK_TEMPLATE_LOG") or (path and path .. ".log")
+        local previous = log_path and io.open(log_path, "r")
+        if previous then
+            local size = previous:seek("end")
+            previous:close()
+            if size and size >= 262144 then
+                os.remove(log_path .. ".1")
+                os.rename(log_path, log_path .. ".1")
+            end
+        end
+        local log = log_path and io.open(log_path, "a")
         if log then
             log:write(os.date("%Y-%m-%d %H:%M:%S "), message, "\n")
             log:close()
@@ -15,6 +25,7 @@ local function report(message)
         r.ShowMessageBox(message, title, 0)
     end
 end
+if automatic then report("REAPER " .. r.GetAppVersion()) end
 local major, minor = r.GetAppVersion():match("^(%d+)%.(%d+)")
 if not major or tonumber(major) < 7 or (tonumber(major) == 7 and tonumber(minor) < 43) then
     report("REAPER 7.43 or newer is required for automatic mono bus configuration.")

@@ -77,5 +77,6 @@ sys.exit(0 if ready else 1)
         exit 0
     fi
     # Use the clock configured by setup-aes67.sh; do not override it with 128 samples.
+    export DEFEEDBACK_TRANSPORT=aes67
     exec pw-jack "$reaper" --raw
 fi

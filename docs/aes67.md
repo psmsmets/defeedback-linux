@@ -63,11 +63,16 @@ A 48-sample block at 48 kHz lasts **1 ms**; this is not total insert latency. Ne
 
 1. Connect the Dante card's **Primary** port and the selected Beelink NIC to the audio network. Enable AES67 on a compatible Avantis/dLive Dante card and set it to **48 kHz**. Verify card revision and firmware support.
 2. Keep console inserts bypassed. Patch unused card sockets for insert sends/returns and create the console's AES67 multicast send. Start with one test path; use one eight-channel stream in each direction for the full configuration.
-3. Run the PTP command printed by setup, with sudo. Use only one PTP client on the interface. Run the printed `pmc` checks and confirm `SLAVE` state and the expected grandmaster.
-4. Start the printed PipeWire helper command as your desktop user. It uses SAP for stream discovery and announcement and exports audio nodes to the existing PipeWire graph. [PipeWire AES67 profile](https://github.com/PipeWire/pipewire/blob/1.6.2/src/daemon/pipewire-aes67.conf.in)
+3. Run `defeedback-linux aes67 ptp` in its own terminal; it uses sudo for the configured PTP client and keeps a text session log. Use only one PTP client on the interface. Run the printed `pmc` checks and confirm `SLAVE` state and the expected grandmaster.
+4. In another terminal, run `defeedback-linux aes67 audio` as your desktop user. It checks PTP SLAVE state before starting the helper and keeps a text session log. It uses SAP for stream discovery and announcement and exports audio nodes to the existing PipeWire graph. [PipeWire AES67 profile](https://github.com/PipeWire/pipewire/blob/1.6.2/src/daemon/pipewire-aes67.conf.in)
 5. Run `defeedback-linux check avantis --launch` (or `dlive`). It skips launching when an AES67 source or the return is missing; this does not verify PTP lock or subscriptions. Select JACK in REAPER.
 6. Map console stream channels 1–8 to REAPER inputs 1–8 and REAPER outputs 1–8 to `defeedback-aes67-return` channels 1–8. Use the [mono template generator](reaper-projects.md) and choose `1ch` for the initial test or `8ch` for the full test. Templates enable monitoring and FX; bypass the FX for the baseline test.
 7. In Dante Controller, subscribe the card inputs to the corresponding **De-Feedback Return** channels and patch them to the console insert returns. Verify each path before enabling its insert and FX.
 8. Verify `RATE` and `QUANT` in `pw-top`, reset `ERR` with `c`, and monitor errors under load. Measure round-trip latency in bypass and with De-Feedback active. Test eight mono paths and repeat the chosen configuration after a cold boot.
 
 Stop the helper and then PTP with Ctrl+C in their terminals. No AES67 autostart service is installed. Record card firmware, PTP lock, quantum, network buffers, test duration, errors, and measured latency.
+
+
+## Logs
+
+PTP and audio helpers remain foreground commands, not automatic services. Start them through the commands above so their output is captured. Add `--debug` for a controlled troubleshooting run, for example `defeedback-linux aes67 audio --debug`. Use `defeedback-linux logs --list` or `defeedback-linux logs --all --journal` to inspect results. While the audio helper or an AES67 REAPER session is active, lightweight 15-second checks log changes in link state, PTP port state, and source/return endpoint availability. These checks do not prove correct subscriptions, clock accuracy, or clean audio; see [logging limits](logging.md).

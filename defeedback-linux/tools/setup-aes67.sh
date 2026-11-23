@@ -209,8 +209,9 @@ printf '  systemctl --user restart pipewire pipewire-pulse wireplumber\n'
 printf 'Verify RATE=48000 and QUANT=%s in pw-top; other local overrides may take precedence.\n' "$quantum"
 printf 'Wrote %s. PTP hardware clock: %s.\n\n' "$conf" "$phc"
 printf 'Terminal 1 (PTP client, domain 0; use only one ptp4l on this interface):\n'
-printf '  sudo ptp4l -i %q -H -4 -E -s -m --domainNumber=0 --uds_address=/run/ptp4l-defeedback --uds_ro_address=/run/ptp4l-defeedbackro\n\n' "$iface"
+printf '  defeedback-linux aes67 ptp\n\n'
 printf 'Terminal 2 (confirm the port is SLAVE and the expected grandmaster is present):\n'
 printf "  pmc -u -b 0 -s /run/ptp4l-defeedbackro 'GET PORT_DATA_SET' 'GET TIME_STATUS_NP'\n\n"
 printf 'Terminal 3 (as your desktop user, after PTP lock):\n'
-printf '  pipewire -c %q\n' "$conf"
+printf '  defeedback-linux aes67 audio\n'
+printf 'PTP and audio helpers run in the foreground and save bounded text logs. Use --debug for extra context.\n'
