@@ -23,6 +23,7 @@ BUNDLE = Path(__file__).resolve().parent.parent
 RESOURCES = {
     'defeedback-linux': 'bin/defeedback-linux',
     'lib/cli.py': 'lib/cli.py',
+    'lib/startup_config.py': 'lib/startup_config.py',
     'lib/session_log.py': 'lib/session_log.py',
     'lib/log_commands.py': 'lib/log_commands.py',
     'lib/aes67_runtime.py': 'lib/aes67_runtime.py',

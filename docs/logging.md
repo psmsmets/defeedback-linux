@@ -66,6 +66,6 @@ The PTP command uses the configured NIC and asks sudo to run `ptp4l`. Use only o
 
 ## Limits
 
-Logs establish process and device/network state, not audible audio quality, plugin responsiveness, PTP offset accuracy, correct subscriptions, or complete detection of xruns/packet loss. A live validation still needs signal-path, latency, stability, and failure/recovery tests. No automatic restart, bypass, USB/AES67 hot switching, or AES67 autostart is introduced here.
+Logs establish process and device/network state, not audible audio quality, plugin responsiveness, PTP offset accuracy, correct subscriptions, or complete detection of xruns/packet loss. A live validation still needs signal-path, latency, stability, and failure/recovery tests. No automatic restart, bypass, USB/AES67 hot switching, or PTP/audio-helper autostart is implemented. The optional early REAPER fallback is described in [startup selection](setup.md#startup-selection).
 
 Output capture uses a bounded queue and rotating text files, outside the audio process. During an extreme output burst it can discard log chunks and records the drop count. Logging has not yet been performance-validated on the Beelink. Hard power loss or killing the supervisor can leave a session without its normal end marker; files already written are available subject to filesystem durability.

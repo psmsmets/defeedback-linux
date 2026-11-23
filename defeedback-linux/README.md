@@ -13,7 +13,7 @@ defeedback-linux
 
 Focusrite Scarlett USB is the default. The limit is eight mono paths; eight-mono operation and AES67 audio remain unvalidated.
 
-The goal is headless operation with the correct settings loaded at boot for USB or AES67 on the second network port. USB selection is implemented; automatic AES67 startup is planned. With appliance setup enabled, REAPER runs in an automatically logged-in Plasma session; monitor-free boot remains unvalidated.
+The goal is headless operation with the correct settings loaded at boot for USB or AES67 on the second network port. USB selection is implemented; an experimental AES67 fallback can be enabled, while automatic PTP/audio service startup remains planned. With appliance setup enabled, REAPER runs in an automatically logged-in Plasma session; monitor-free boot has been validated on the reference Beelink. Planned startup selection is USB first, otherwise a ready AES67 connection on the second port with four mono paths by default (maximum eight); see [startup selection](../docs/setup.md#startup-selection).
 
 ## Daily use
 

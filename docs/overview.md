@@ -29,8 +29,8 @@ Focusrite Scarlett is the default interface for this Linux project. Alpha Labs r
 | USB audio | Scarlett Solo 3rd Gen: 2 mono instances; UMC202HD: 2; EVO8: 4; CQ12T: 5. SQ USB audio tested; eight-mono operation not validated. |
 | Capacity | Four stereo instances ran stably. Mono operation approximately halved CPU load, supporting an eight-mono expectation; eight is the software limit and remains untested. |
 | Plugin license | Tests use the trial. The license window opens; paid-license activation on Linux is untested. |
-| AES67 | Prepared for Avantis Solo with Dante 64 V3; audio and latency tests pending. |
-| Unattended live operation | USB startup selection is implemented. AES67 autostart and automatic recovery are not implemented; monitor-free boot remains unvalidated. See [startup](setup.md#dedicated-workstation-startup). |
+| AES67 | Prepared for Avantis Solo with Dante 64 V3; four-mono audio and latency tests are next; eight-mono capacity testing follows. |
+| Unattended live operation | USB startup selection is implemented. Boot without a monitor has been validated on the reference Beelink. An opt-in early AES67 fallback is available for testing; automatic PTP/audio services remain planned; automatic recovery is not implemented. See [startup](setup.md#dedicated-workstation-startup). |
 
 ## Prepare Ubuntu Studio
 

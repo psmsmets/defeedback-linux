@@ -50,7 +50,7 @@ The launcher uses `reaper/create-template.lua` to create a mono project for the 
 
 ## Dedicated workstation startup
 
-The goal is headless operation with audio settings selected at boot for the connected USB interface or AES67 on the second NIC. USB selection is implemented; automatic AES67 startup remains planned. A graphical Plasma session is still required. Screenless boot and activation require target-hardware validation.
+The goal is headless operation with audio settings selected at boot for the connected USB interface or AES67 on the second NIC. USB selection is implemented; automatic AES67 startup remains planned. A graphical Plasma session is still required. Boot without a monitor has been validated on the reference Beelink. Paid-license activation remains untested.
 
 Run `bash setup-defeedback.sh --appliance` from the Ubuntu Studio Plasma desktop to install De-Feedback and configure startup. If REAPER is already installed, run `defeedback-linux appliance setup` to configure it separately. Normal installation does not enable appliance settings. Use the account that should log in automatically. Anyone with physical access can use this desktop after boot.
 
@@ -68,6 +68,26 @@ sudo systemctl unmask ModemManager.service
 Reboot when ready and verify that the desktop and REAPER appear. Check the REAPER service with `systemctl --user status defeedback-reaper.service` and its boot log with `journalctl --user -u defeedback-reaper.service -b`. See [service status and troubleshooting](logging.md#check-the-autostart-service) for the status commands and their meaning. Test the physical power button after saving the project.
 
 To stop REAPER from starting at login, run `systemctl --user disable defeedback-reaper.service`. To turn off automatic login, run `sudo kwriteconfig6 --file /etc/sddm.conf --group Autologin --key User ""`. Setup saves an existing `/etc/sddm.conf` to `/etc/sddm.conf.before-defeedback` on the first run. To restore the system sleep and power-button defaults, remove the `90-defeedback-appliance.conf` files from `/etc/systemd/sleep.conf.d/` and `/etc/systemd/logind.conf.d/`, then reboot. Adjust the corresponding desktop preferences in Plasma System Settings.
+
+### Startup selection
+
+USB has priority. AES67 fallback is **disabled by default**. Enable the experimental early-start test as described in [AES67 activation](aes67.md#enable-experimental-startup-fallback).
+
+```mermaid
+flowchart TD
+    Boot["Power on / desktop autologin"] --> USB{"Supported USB device selected?"}
+    USB -->|Yes| USBRun["Start REAPER with device profile; maximum 8 mono paths"]
+    USB -->|No| Enabled{"AES67 fallback enabled?"}
+    Enabled -->|No| Skip["Skip REAPER; log the reason"]
+    Enabled -->|Yes| AESRun["Attempt REAPER via saved JACK profile; 4 mono paths (default), maximum 8"]
+    AESRun -. "parallel; does not gate launch" .-> Observe["Log link, PTP state and endpoint availability"]
+```
+
+The enabled fallback attempts to launch REAPER before stream tests complete. The supervisor performs checks after spawning the process and logs transitions while REAPER runs. This makes it possible to test whether REAPER opens and whether ports/routing become usable later. It does not guarantee audio readiness or successful template creation when ports are absent; check the session and template logs.
+
+The setting persists across boots and applies to automatic device selection only. An explicit missing USB selection or ambiguous devices do not silently select AES67. Disabling fallback affects the next launch and does not interrupt running audio.
+
+On the reference Beelink, AES67 uses `enp2s0` and control/Internet uses `enp1s0`. PTP and the AES67 helper still need to be started separately. Automatic service startup, subscriptions/routing when streams appear, and recovery are still planned. The full live-ready startup goal requires those steps and hardware validation; the early-start mode is a test facility, not that completed implementation.
 
 ## If the Wine installer cannot extract files
 

@@ -4,7 +4,7 @@ export LC_ALL=C
 
 usage() {
     cat <<'EOF'
-Usage: bash setup-aes67.sh [--network link-local|dhcp|existing] [--quantum SAMPLES] [INTERFACE [RETURN_MULTICAST_IP]]
+Usage: bash setup-aes67.sh [--network link-local|dhcp|existing] [--quantum SAMPLES] [--network-latency MS] [INTERFACE [RETURN_MULTICAST_IP]]
 
 Prepare an optional PipeWire AES67 test for Avantis or dLive at 48 kHz.
 Use a wired interface with a PTP hardware clock and an unused 239.69.x.x
@@ -18,6 +18,8 @@ existing to preserve the current network configuration. Profiles activate on
 connection; this script does not activate them immediately.
 PipeWire defaults to 48000 Hz and a fixed quantum of 48 samples (1 ms block).
 Allowed quantum values: 32,48,64,96,128,144,256,512,1024,8192 samples.
+Use --network-latency MS (integer 1-20, default 3) for both RTP latency targets.
+Packet time stays separate at the upstream AES67 profile setting of 1 ms.
 All settings require hardware testing.
 A user PipeWire clock drop-in is also written; restart PipeWire to apply it.
 The return defaults to 239.69.150.244; verify that this group is unused.
@@ -26,6 +28,7 @@ EOF
 
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 
+network_latency=3
 quantum=48
 quantum_explicit=false
 network=link-local
@@ -33,6 +36,9 @@ network_explicit=false
 while [[ ${1:-} == --* || ${1:-} == -h ]]; do
     case $1 in
         --help|-h) usage; exit 0 ;;
+        --network-latency)
+            [[ $# -ge 2 ]] || fail "--network-latency requires an integer from 1 to 20."
+            network_latency=$2; shift 2 ;;
         --quantum)
             [[ $# -ge 2 ]] || fail "--quantum requires a sample count."
             quantum=$2; quantum_explicit=true; shift 2 ;;
@@ -62,6 +68,7 @@ if [[ -z $iface ]]; then
     read -r -p 'Unused return multicast IP [239.69.150.244]: ' group || fail "Input cancelled."
     group=${group:-239.69.150.244}
 fi
+[[ $network_latency =~ ^([1-9]|1[0-9]|20)$ ]] || fail "Network latency must be an integer from 1 to 20 ms."
 case $quantum in
     32|48|64|96|128|144|256|512|1024|8192) ;;
     *) fail "Quantum must be one of: 32,48,64,96,128,144,256,512,1024,8192 samples." ;;
@@ -156,7 +163,7 @@ tmp=$(mktemp "$conf_dir/.aes67.XXXXXX")
 trap 'rm -f -- "$tmp"' EXIT
 
 # Patch only active keys and refuse an unfamiliar upstream layout.
-awk -v iface="$iface" -v group="$group" -v quantum="$quantum" '
+awk -v iface="$iface" -v group="$group" -v quantum="$quantum" -v latency="$network_latency" '
     /^[[:space:]]*context.properties[[:space:]]*=[[:space:]]*\{/ {
         print
         print "    default.clock.rate = 48000"
@@ -183,8 +190,9 @@ awk -v iface="$iface" -v group="$group" -v quantum="$quantum" '
     /^[[:space:]]*node\.channel-names[[:space:]]*=/ {
         sub(/=.*/, "= [\"CH1\", \"CH2\", \"CH3\", \"CH4\", \"CH5\", \"CH6\", \"CH7\", \"CH8\"]"); names++
     }
+    /^[[:space:]]*sess\.latency\.msec[[:space:]]*=/ { sub(/=.*/, "= " latency); latency_keys++ }
     { print }
-    END { if (properties != 1 || clock != 1 || nic != 2 || dst != 1 || socket != 1 || sess != 1 || sink != 1 || channels != 1 || names != 1) exit 1 }
+    END { if (latency_keys != 2 || properties != 1 || clock != 1 || nic != 2 || dst != 1 || socket != 1 || sess != 1 || sink != 1 || channels != 1 || names != 1) exit 1 }
 ' "$base" > "$tmp" || fail "Unexpected layout in $base; no config was replaced."
 
 mv -- "$tmp" "$conf"
@@ -207,6 +215,7 @@ mv -- "$tmp" "$clock_dir/90-defeedback-clock.conf"
 printf 'PipeWire clock: 48000 Hz, quantum %s. After stopping audio, apply with:\n' "$quantum"
 printf '  systemctl --user restart pipewire pipewire-pulse wireplumber\n'
 printf 'Verify RATE=48000 and QUANT=%s in pw-top; other local overrides may take precedence.\n' "$quantum"
+printf 'RTP receive and transmit latency targets: %s ms each; this is not measured round-trip latency.\n' "$network_latency"
 printf 'Wrote %s. PTP hardware clock: %s.\n\n' "$conf" "$phc"
 printf 'Terminal 1 (PTP client, domain 0; use only one ptp4l on this interface):\n'
 printf '  defeedback-linux aes67 ptp\n\n'

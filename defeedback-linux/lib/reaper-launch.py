@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,6 +16,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
 from session_log import Session, audio_health, debug_snapshot, run_logged
+import startup_config
 
 
 def detect_cards(asound=Path('/proc/asound')):
@@ -199,34 +201,59 @@ def main():
                     card = select_card(cards, args.device)
                 except LookupError as error:
                     logger.warning('%s', error)
-                    if args.missing_audio == 'skip' and not args.detect:
-                        logger.info('REAPER startup skipped safely. Connect USB audio and launch again, or use the explicit AES67 test after PTP lock.')
+                    if args.device == 'auto' and startup_config.enabled():
+                        card = None
+                    elif args.missing_audio == 'skip' and not args.detect:
+                        logger.info('REAPER startup skipped: no matching USB device and no enabled automatic AES67 fallback.')
                         return 0
-                    raise RuntimeError(str(error)) from error
-                selected_id = card['id']
-                count, first_input = routing(card, args.channels)
-                logger.info('Selected hw:%s (%s), %s mono paths, inputs %s–%s to outputs 1–%s; 48000 Hz, 24-bit, 64 samples, 3 periods.',
-                             card['id'], card['family'], count, first_input, first_input + count - 1, count)
-                if args.detect:
-                    print(('Selected hw:%s (%s): %s mono paths, inputs %s–%s to outputs 1–%s; '
-                           '48000 Hz, 24-bit, 64 samples, 3 periods.') %
-                          (card['id'], card['family'], count, first_input, first_input + count - 1, count))
-                    return 0
-                resource = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'REAPER'
-                source = app / 'reaper'
-                seed = resource / 'reaper.ini'
-                safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', card['id'])
-                ini = resource / ('reaper-defeedback-' + safe_id + '.ini')
-                prepare_ini(ini, seed, card)
-                if not reaper_args:
-                    project = state / ('defeedback-' + safe_id + '-' + str(count) + 'ch.RPP')
-                    environment.update(DEFEEDBACK_TEMPLATE_PROFILE='automatic',
-                                       DEFEEDBACK_TEMPLATE_CHANNELS=str(count),
-                                       DEFEEDBACK_TEMPLATE_FIRST_INPUT=str(first_input),
-                                       DEFEEDBACK_TEMPLATE_OUTPUT=str(project),
-                                       DEFEEDBACK_TEMPLATE_LOG=str(state / 'logs' / ('template-' + safe_id + '-' + str(count) + 'ch.log')))
-                    reaper_args = ['-new', str(source / 'create-template.lua')]
-                reaper_args = ['-newinst', '-cfgfile', str(ini)] + reaper_args
+                    else:
+                        raise RuntimeError(str(error)) from error
+                if card is None:
+                    count = args.channels or 4
+                    if count not in (1, 2, 4, 8):
+                        raise RuntimeError('AES67 supports 1, 2, 4, or 8 mono paths; the default is 4.')
+                    profile = startup_config.reaper_ini()
+                    if not profile.is_file() or not shutil.which('pw-jack'):
+                        raise RuntimeError('Enabled AES67 fallback is missing its REAPER profile or pw-jack. Run aes67 enable again.')
+                    logger.info('AES67 EARLY_LAUNCH requested: %s mono paths; readiness checks will run after process launch, not gate it.', count)
+                    if args.detect:
+                        print('Selected AES67 fallback: %s mono paths; readiness not checked.' % count)
+                        return 0
+                    environment['DEFEEDBACK_TRANSPORT'] = 'aes67'
+                    if not reaper_args:
+                        environment.update(DEFEEDBACK_TEMPLATE_PROFILE='automatic',
+                                           DEFEEDBACK_TEMPLATE_CHANNELS=str(count),
+                                           DEFEEDBACK_TEMPLATE_FIRST_INPUT='1',
+                                           DEFEEDBACK_TEMPLATE_OUTPUT=str(state / ('defeedback-aes67-' + str(count) + 'ch.RPP')),
+                                           DEFEEDBACK_TEMPLATE_LOG=str(state / ('logs/template-aes67-' + str(count) + 'ch.log')))
+                        reaper_args = ['-new', str(app / 'reaper/create-template.lua')]
+                    reaper_args = ['-newinst', '-cfgfile', str(profile)] + reaper_args
+                else:
+                    environment['DEFEEDBACK_TRANSPORT'] = 'usb'
+                    selected_id = card['id']
+                    count, first_input = routing(card, args.channels)
+                    logger.info('Selected hw:%s (%s), %s mono paths, inputs %s–%s to outputs 1–%s; 48000 Hz, 24-bit, 64 samples, 3 periods.',
+                                 card['id'], card['family'], count, first_input, first_input + count - 1, count)
+                    if args.detect:
+                        print(('Selected hw:%s (%s): %s mono paths, inputs %s–%s to outputs 1–%s; '
+                               '48000 Hz, 24-bit, 64 samples, 3 periods.') %
+                              (card['id'], card['family'], count, first_input, first_input + count - 1, count))
+                        return 0
+                    resource = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'REAPER'
+                    source = app / 'reaper'
+                    seed = resource / 'reaper.ini'
+                    safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', card['id'])
+                    ini = resource / ('reaper-defeedback-' + safe_id + '.ini')
+                    prepare_ini(ini, seed, card)
+                    if not reaper_args:
+                        project = state / ('defeedback-' + safe_id + '-' + str(count) + 'ch.RPP')
+                        environment.update(DEFEEDBACK_TEMPLATE_PROFILE='automatic',
+                                           DEFEEDBACK_TEMPLATE_CHANNELS=str(count),
+                                           DEFEEDBACK_TEMPLATE_FIRST_INPUT=str(first_input),
+                                           DEFEEDBACK_TEMPLATE_OUTPUT=str(project),
+                                           DEFEEDBACK_TEMPLATE_LOG=str(state / 'logs' / ('template-' + safe_id + '-' + str(count) + 'ch.log')))
+                        reaper_args = ['-new', str(source / 'create-template.lua')]
+                    reaper_args = ['-newinst', '-cfgfile', str(ini)] + reaper_args
             wine = home / '.local/opt/defeedback-wine-dcomp/runtime/bin'
             executable = home / '.local/opt/REAPER/reaper'
             if not all(path.is_file() and os.access(path, os.X_OK)
@@ -244,7 +271,10 @@ def main():
                 environment['WINEDEBUG'] = '+timestamp,+pid,+tid,err+all,warn+all'
                 environment['PIPEWIRE_DEBUG'] = '3'
                 logger.debug('REAPER arguments=%s', reaper_args)
-            return run_logged([str(executable)] + reaper_args, session, environment,
+            command = [str(executable)] + reaper_args
+            if not args.raw and environment.get('DEFEEDBACK_TRANSPORT') == 'aes67':
+                command.insert(0, shutil.which('pw-jack') or 'pw-jack')
+            return run_logged(command, session, environment,
                               health=audio_health(selected_id, environment.get('DEFEEDBACK_TRANSPORT') == 'aes67'))
 
 

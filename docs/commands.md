@@ -17,6 +17,9 @@ After installing or updating the integration, use `defeedback-linux` from any di
 | `defeedback-linux license-gui` | Open license management in VSTHost |
 | `defeedback-linux aes67 install` | Install optional AES67 packages |
 | `defeedback-linux aes67 setup` | Configure the AES67 network, PTP access, and PipeWire |
+| `defeedback-linux aes67 enable --reaper-ini PATH` | Enable experimental early fallback using saved JACK preferences |
+| `defeedback-linux aes67 disable` | Disable AES67 fallback for future launches |
+| `defeedback-linux aes67 status` | Show the activation setting |
 | `defeedback-linux aes67 ptp` | Run the configured PTP client with session logging |
 | `defeedback-linux aes67 audio` | Run the AES67 helper after checking PTP SLAVE state |
 | `defeedback-linux appliance setup` | Enable desktop autologin, REAPER autostart, and appliance power settings |
@@ -46,9 +49,9 @@ AES67 remains a manual network/PTP/audio startup; `aes67 setup` prepares configu
 
 The goal is a headless appliance: power on and load the correct settings and mono routing for the connected USB interface or AES67 on the second NIC (`enp2s0` on the reference Beelink). The control/Internet NIC remains separate.
 
-`defeedback-linux appliance setup` enables Plasma desktop autologin, REAPER autostart, and power settings. It is opt-in; normal installation does not enable it. USB detection and per-device configuration already run at launch. REAPER and the plugin still require a graphical session even when the intended deployment has no attached screen or keyboard. Monitor-free boot, license activation, and recovery must be validated on the target machine. This is not a console-only audio service.
+`defeedback-linux appliance setup` enables Plasma desktop autologin, REAPER autostart, and power settings. It is opt-in; normal installation does not enable it. USB detection and per-device configuration already run at launch. REAPER and the plugin still require a graphical session even when the intended deployment has no attached screen or keyboard. Boot without a monitor has been validated on the reference Beelink. Paid-license activation and failure recovery remain unvalidated. This is not a console-only audio service.
 
-Automatic AES67 selection, stream routing, service startup, and recovery after lock loss remain planned. The manual audio helper checks PTP SLAVE state before starting. Until implemented and tested, configure and start AES67 manually using [the AES67 guide](aes67.md). Installing the appliance profile does not make AES67 start automatically. No audio hotplug switching is implemented while REAPER is running.
+Startup selects USB first. An opt-in AES67 fallback now attempts REAPER with four mono paths by default (maximum eight) before readiness tests finish; the supervisor logs link, PTP, and endpoint state in parallel. It is disabled by default and remains a hardware test facility. See [activation](aes67.md#enable-experimental-startup-fallback) and [startup selection](setup.md#startup-selection). Automatic PTP/audio service startup, routing, and recovery are not implemented. No audio hotplug switching is implemented while REAPER is running.
 
 `defeedback-linux trim` previews cleanup by default. Use `--check --autoremove` to preview dependency cleanup and `--apply --autoremove` to apply it. Cleanup is never automatic during installation or appliance setup. See [startup settings](setup.md#dedicated-workstation-startup) and [application cleanup](setup.md#remove-optional-applications).
 
