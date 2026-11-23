@@ -36,7 +36,7 @@ end
 
 local _, script_path = r.get_action_context()
 local directory = script_path:match("^(.*[/\\])")
-local source_path = directory .. "defeedback-2ch.RPP"
+local source_path = directory .. "plugin-state.RPP"
 local source = io.open(source_path, "r")
 if not source then
     report("Missing source project: " .. source_path)

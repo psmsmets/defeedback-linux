@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-exec python3 "$bundle_dir/src/update-defeedback.py" "$@"
+exec python3 "$bundle_dir/lib/update-defeedback.py" "$@"

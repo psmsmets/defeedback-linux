@@ -56,7 +56,7 @@ mapfile -d '' -t plugins < <(find "$WINEPREFIX/drive_c" -iname 'defeedback.vst3'
 plugin_relative=${plugins[0]#"$WINEPREFIX/drive_c/"}
 windows_plugin="C:\\${plugin_relative//\//\\}"
 
-# Use the same JUCE renderer opt-in as the successful patched VSTHost test.
+# Enable the patched JUCE renderer for VSTHost.
 "$wine" reg add 'HKCU\Software\Wine\AppDefaults\'"${vsthost##*/}" \
     /v HideWineVersion /t REG_SZ /d Y /f >/dev/null
 

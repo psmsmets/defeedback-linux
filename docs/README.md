@@ -3,6 +3,7 @@
 | Guide | Contents |
 | --- | --- |
 | [Project overview](overview.md) | Reference hardware, Ubuntu Studio preparation, audio measurements, and AES67 test background. |
+| [Workstation command](commands.md) | Unified CLI, device-side Git updates, and command options. |
 | [Setup and operation](setup.md) | Installation, device profiles, automatic startup, updates, diagnostics, and application cleanup. |
 | [Installation reference](installation.md) | Download resources, version selection, and offline preparation. |
 | [AES67 setup](aes67.md) | Optional installation, network profiles, PTP, PipeWire clock, and console test. |

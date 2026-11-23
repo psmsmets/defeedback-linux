@@ -8,7 +8,7 @@ bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 package_dir=${1:-"$bundle_dir/packages"}
 offline=${2:-false}
 [[ $offline == true || $offline == false ]] || exit 2
-source "$bundle_dir/src/apt-packages.sh"
+source "$bundle_dir/lib/apt-packages.sh"
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 && $EUID -ne 0 ]] ||
     { printf 'Run as your regular user on Ubuntu Studio (Linux x86-64).\n' >&2; exit 1; }
 

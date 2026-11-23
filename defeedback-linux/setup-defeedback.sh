@@ -150,7 +150,7 @@ printf 'Setup log: %s\n' "$setup_log"
 # Resolve the bundled packages relative to this script, regardless of where it was started.
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 package_dir=$(cd -- "${1:-$bundle_dir/packages}" && pwd) || fail 'The package directory does not exist.'
-source "$bundle_dir/src/apt-packages.sh"
+source "$bundle_dir/lib/apt-packages.sh"
 # A custom archive directory can still use the bundled Windows installer.
 plugin_installer="$package_dir/DefeedbackSetup.exe"
 [[ -f $plugin_installer ]] || plugin_installer="$bundle_dir/packages/DefeedbackSetup.exe"
@@ -188,7 +188,7 @@ if [[ $desktop_dir != /* || $desktop_dir == "$HOME" ]]; then
 fi
 
 stage 'Patched Wine'
-bash "$bundle_dir/src/install-patched-wine.sh" "$package_dir" "$offline" 9>&-
+bash "$bundle_dir/lib/install-patched-wine.sh" "$package_dir" "$offline" 9>&-
 # Keep the system Wine available outside this setup and the installed launchers.
 unset WINEARCH WINEPREFIX WINEDLLOVERRIDES
 export WINELOADER="$wine" WINESERVER="$wine_bin/wineserver"
@@ -363,11 +363,17 @@ for host in "$yabridge_dir"/yabridge-host*.exe; do
 done
 
 stage 'Launchers and REAPER profiles'
-install -Dm 755 -- "$bundle_dir/src/reaper" "$app_dir/bin/reaper"
-install -Dm 644 -- "$bundle_dir/src/reaper-launch.py" "$app_dir/bin/reaper-launch.py"
-for project_file in defeedback-2ch.RPP create-template.lua reaper-cq12t.ini reaper-evo8.ini; do
-    install -Dm 644 -- "$bundle_dir/projects/$project_file" "$app_dir/projects/$project_file"
-done
+# Share the integration installer with the bundle updater.
+python3 - "$bundle_dir" "$app_dir" "$reaper_dir" "$work_dir/integration-backup" <<'PYINSTALL'
+import importlib.util
+from pathlib import Path
+import sys
+bundle, app, runtime, backup = map(Path, sys.argv[1:])
+spec = importlib.util.spec_from_file_location('defeedback_update', bundle / 'lib/update-defeedback.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+module.install(None, runtime, app, backup)
+PYINSTALL
 link_command "$app_dir/bin/reaper" "$reaper_dir/reaper"
 install_launcher reaper REAPER "$app_dir/bin/reaper" 'Digital audio workstation'
 
@@ -383,7 +389,7 @@ if [[ ! -f $vsthost_dir/vsthost.exe ]]; then
     done
 fi
 if [[ -f $vsthost_dir/vsthost.exe ]]; then
-    install -Dm 755 -- "$bundle_dir/src/open-license-gui.sh" "$app_dir/bin/vsthost"
+    install -Dm 755 -- "$bundle_dir/lib/open-license-gui.sh" "$app_dir/bin/vsthost"
     link_command "$app_dir/bin/vsthost"
     install_launcher vsthost 'VSTHost (De-Feedback License)' "$app_dir/bin/vsthost" 'Open De-Feedback in VSTHost without audio'
 else

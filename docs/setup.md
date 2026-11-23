@@ -1,6 +1,6 @@
 # Install De-Feedback on Ubuntu Studio
 
-Use [the installation reference](installation.md) for the download manifest, offline preparation, and the list of changes setup makes.
+Use [the workstation command](commands.md) for daily operation and device-side Git updates. Use [the installation reference](installation.md) for the download manifest, offline preparation, and the list of changes setup makes.
 
 Copy the entire `defeedback-linux` folder to the target computer. In the Ubuntu Studio desktop session, open a terminal in that folder and run the script as your regular user.
 
@@ -10,7 +10,7 @@ bash setup-defeedback.sh
 
 The script uses `sudo` for Ubuntu packages and installs REAPER, yabridge, and patched Wine in your home directory. It reuses an existing patched Wine build when available. On a fresh machine it compiles the Direct2D/DirectComposition Wine fork from source, which can take a while on the target computer. The runtime lives at `~/.local/opt/defeedback-wine-dcomp/runtime`. [Wine fork and build notes](https://github.com/giang17/wine/blob/d2d1-dcomp-11.0/PATCHES.md)
 
-Close REAPER and VSTHost before updating an existing installation. Setup updates the permanent `~/.wine-defeedback` prefix in place and reuses its installed VST3. Use the installed REAPER launcher so yabridge gets the patched Wine loader and server. REAPER gets desktop and applications-menu entries; VSTHost entries are added when its package is available. The `reaper`, `vsthost`, and `yabridgectl` commands are linked into `~/.local/bin`. Open a new Konsole tab, or run `export PATH="$HOME/.local/bin:$PATH"` for the current terminal. [yabridge Wine configuration](https://github.com/robbert-vdh/yabridge#configuration)
+Close REAPER and VSTHost before updating an existing installation. Setup updates the permanent `~/.wine-defeedback` prefix in place and reuses its installed VST3. Use the installed REAPER launcher so yabridge gets the patched Wine loader and server. REAPER gets desktop and applications-menu entries; VSTHost entries are added when its package is available. The `defeedback`, `reaper`, `vsthost`, and `yabridgectl` commands are linked into `~/.local/bin`. Open a new Konsole tab, or run `export PATH="$HOME/.local/bin:$PATH"` for the current terminal. [yabridge Wine configuration](https://github.com/robbert-vdh/yabridge#configuration)
 
 Download the Windows installer and optional VSTHost x64 archive manually from Alpha Labs. Complete the three acknowledgements on the website, then put `DefeedbackSetup.exe` in `packages/` and extract VSTHost to `packages/vsthostx64/` if you need it. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/) On a new installation, setup opens it through Wine so each user can review and accept the Alpha Labs terms in the installer. Add your Linux packages to the same directory or supply their directory with `bash setup-defeedback.sh '/path/to/packages'`.
 
@@ -26,7 +26,7 @@ For missing archives, the script downloads the REAPER version in the resource ma
 
 ## First audio test with Focusrite
 
-Connect the Scarlett and turn off **Direct Monitor**. Open REAPER from the applications menu or run `reaper`. Under **Options → Preferences → Audio → Device**, select **ALSA**, choose the Scarlett for input and output, then apply these settings.
+Connect the Scarlett and turn off **Direct Monitor**. Open REAPER from the applications menu or run `defeedback`. Under **Options → Preferences → Audio → Device**, select **ALSA**, choose the Scarlett for input and output, then apply these settings.
 
 | ALSA setting | Value |
 | --- | --- |
@@ -38,11 +38,11 @@ Connect the Scarlett and turn off **Direct Monitor**. Open REAPER from the appli
 
 The automatic launcher reapplies these ALSA settings on each launch. Check the active audio format in REAPER. For a manual buffer test, keep REAPER open while changing the setting; the next automatic launch restores 64 samples. [REAPER User Guide](https://dlx.reaper.fm/userguide/html/)
 
-On the Beelink running Ubuntu Studio with a **Focusrite Scarlett Solo 3rd Gen**, ALSA at **48 kHz and 64 samples** measured **8.1 ms round-trip latency with De-Feedback active**. Measurement used a separate **MacBook with M1 Pro**, an **Audient EVO8**, and **Open Sound Meter v1.55**, deriving the impulse response from pink noise. Smaller blocks caused dropouts or audible clicks, so the tested USB configuration uses ALSA.
+The Scarlett Solo 3rd Gen measured **8.1 ms round-trip latency with De-Feedback active**. See [the measurement setup](overview.md#measure-stability-and-latency).
 
 If De-Feedback is not found, scan `~/.vst3` under **Plug-ins → VST**. Use the generated mono project, bypass its FX for the initial routing check, then enable De-Feedback.
 
-The Audient EVO8, Behringer UMC202HD, and Allen & Heath CQ12T were tested with ALSA at **48 kHz, 24-bit, and 3 periods**. The table distinguishes tested hardware from planned configurations. Use confirmed device identifiers for capture and playback.
+Tested USB hardware is listed below. The common ALSA configuration is **48 kHz, 24-bit, 64 samples, and 3 periods**. Use the detected card ID for input and output.
 
 | Interface | ALSA device | Test status and settings |
 | --- | --- | --- |
@@ -50,9 +50,7 @@ The Audient EVO8, Behringer UMC202HD, and Allen & Heath CQ12T were tested with A
 | Audient EVO8 | `hw:EVO8` | 4 mono instances tested; 64 samples; smaller blocks caused audible clicks |
 | Allen & Heath SQ USB-B | `hw:SQ` | USB audio successfully tested; eight-mono operation remains unvalidated |
 | Allen & Heath CQ12T USB-B | `hw:CQ12T` | 5 mono instances successfully tested; 64 samples |
-| Allen & Heath CQ18T USB-B | Expected `hw:CQ18T`; identifier still to be confirmed | 64 samples planned, with the same settings as CQ12T; hardware validation pending |
-| Allen & Heath CQ20B USB-B | Expected `hw:CQ20B`; identifier still to be confirmed | 64 samples planned, with the same settings as CQ12T; hardware validation pending |
-| Behringer U-PHORIA UMC202HD | `hw:U192k` | 2 mono instances tested; 64 samples as the common configuration; 32 samples also worked in an earlier test |
+| Behringer U-PHORIA UMC202HD | `hw:U192k` | 2 mono instances tested; 64 samples |
 
 CQ12T uses five tested mono paths: inputs **6–10 → outputs 1–5**. The processed returns use separate CQ channels with **USB/SD** as their source. Keep dry channels out of the listening mix and keep return channels out of the USB sends feeding REAPER. See [channel mappings](reaper-projects.md#cq-signal-flow-and-channel-mapping).
 
@@ -60,7 +58,7 @@ The software limit is **eight mono paths**. Four stereo instances were stable, a
 
 ## Mono routing templates
 
-The launcher uses `projects/create-template.lua` to create a mono project for the detected USB device. For manual routing, including AES67, load the installed `~/.local/share/defeedback/projects/create-template.lua` in REAPER's Actions window and choose a profile. See [templates and mappings](reaper-projects.md).
+The launcher uses `reaper/create-template.lua` to create a mono project for the detected USB device. For manual routing, including AES67, load the installed `~/.local/share/defeedback/reaper/create-template.lua` in REAPER's Actions window and choose a profile. See [templates and mappings](reaper-projects.md).
 
 ## Dedicated workstation startup
 
@@ -96,19 +94,19 @@ Wine's terminal output is saved in `${XDG_STATE_HOME:-$HOME/.local/state}/defeed
 
 After its initial environment checks, `setup-defeedback.sh` saves terminal output and errors to a timestamped `setup-*.log.*` under `${XDG_STATE_HOME:-$HOME/.local/state}/defeedback/logs/`. The terminal displays each installation stage and prints the log path on exit, including after an installation failure.
 
-From the setup bundle, run `bash tools/diagnose.sh` to collect system information, USB topology, ALSA devices and stream parameters, PipeWire routing, and available USB kernel messages in a local `diagnostics-*.log.*` in the same directory. The terminal shows the result of each check and the full report path. Set `NO_COLOR=1` to turn off the script's terminal colors.
+From the setup bundle, run `defeedback diagnose` to collect system information, USB topology, ALSA devices and stream parameters, PipeWire routing, and available USB kernel messages in a local `diagnostics-*.log.*` in the same directory. The terminal shows the result of each check and the full report path. Set `NO_COLOR=1` to turn off the script's terminal colors.
 
-For a direct SQ USB test, close REAPER and run `bash tools/diagnose.sh --usb-card SQ`. Use the card ID shown in brackets in `/proc/asound/cards` for other devices. The optional tests open capture and playback separately at 48 kHz with two channels and 24-bit samples on the application side. Playback sends silence and capture is discarded. These tests verify stream access. Verify the physical signal and mixer patch separately. Review the report before sharing it, since it contains device names and system details.
+For a direct SQ USB test, close REAPER and run `defeedback diagnose --usb-card SQ`. Use the card ID shown in brackets in `/proc/asound/cards` for other devices. The optional tests open capture and playback separately at 48 kHz with two channels and 24-bit samples on the application side. Playback sends silence and capture is discarded. These tests verify stream access. Verify the physical signal and mixer patch separately. Review the report before sharing it, since it contains device names and system details.
 
 If extraction under Wine fails, run the official installer on Windows, review the terms, and accept them if you agree. Copy the resulting `Defeedback.vst3` into the Linux setup's `packages/` directory. If it is a folder, copy the whole folder. Then run `bash setup-defeedback.sh --import-vst3` to import the plugin into the Wine prefix and register it with yabridge. For a custom package directory, place the VST3 there and pass that directory after `--import-vst3`.
 
 ## License management in VSTHost
 
-Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. The supplied package terms limit VSTHost to private use. The `vsthost` command and desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**.
+Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. The supplied package terms limit VSTHost to private use. The `defeedback license-gui` command and VSTHost desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**.
 
 ## Automatic USB startup
 
-Rerun `bash setup-defeedback.sh` from the updated bundle on the Linux computer to install the hardware-aware launcher, source project, template action, and generic audio preference seeds. Use `--appliance` to also enable automatic login and REAPER startup. Existing desktop and applications-menu shortcuts point to the installed `reaper` wrapper and run the same detection as `defeedback-reaper.service`.
+Rerun `bash setup-defeedback.sh` from the updated bundle on the Linux computer to install the hardware-aware launcher, source project, template action. Use `--appliance` to also enable automatic login and REAPER startup. Existing desktop and applications-menu shortcuts point to the installed `reaper` wrapper and run the same detection as `defeedback-reaper.service`.
 
 | Detected device | Default mono paths | Input → output mapping |
 | --- | --- | --- |
@@ -119,17 +117,15 @@ Rerun `bash setup-defeedback.sh` from the updated bundle on the Linux computer t
 | CQ18T / CQ20B | 8 | 9–16 → 1–8 |
 | SQ / QU | Up to 8 | Matching channel numbers |
 
-Detection reads USB stream descriptors under `/proc/asound/card*/stream*` and uses the complete detected ALSA card ID. CQ/SQ/QU family matching is case-insensitive. Scarlett is identified from its card ID and USB description and takes priority when several supported devices are connected. Other ambiguous combinations require an explicit selection. QU recognition and the CQ18T/CQ20B mappings remain provisional until tested on hardware.
+Scarlett takes priority when several supported devices are connected. Other ambiguous combinations require an explicit device selection. QU and CQ18T/CQ20B profiles remain unvalidated.
 
-All USB profiles request ALSA at 48000 Hz, 24-bit, 64 samples, 3 periods, and RT priority 50. The INI enables the device's full capture/playback channel counts; the project selects the required paths. The launcher checks that the requested mapping fits the reported channel capacity.
-
-Preferences are written atomically to `~/.config/REAPER/reaper-defeedback-DEVICE.ini`, using the active `reaper.ini` as the initial seed when available, otherwise a supplied generic audio seed. The separate INIs share the REAPER resource directory, including plugin caches. The launcher removes saved project-restore paths and explicitly selects the startup project. Each profile's subsequent REAPER preference changes are retained, with device and common ALSA settings reapplied at launch.
+The launcher configures ALSA at 48000 Hz, 24-bit, 64 samples, 3 periods, and RT priority 50. Device-specific preferences are stored in `~/.config/REAPER/reaper-defeedback-DEVICE.ini`. Existing device preferences are preserved, otherwise REAPER preferences are used as a seed. If neither exists, the launcher generates a minimal configuration.
 
 On first launch, REAPER runs the template action without prompts and saves `~/.local/state/defeedback/defeedback-DEVICE-Nch.RPP`. Each plugin is configured and checked for one input and one output before the next instance is created. Subsequent launches reopen that saved project and check mono I/O. Move the saved project aside to regenerate it from the source. Generated tracks have active FX and monitoring, are unmuted, and have their master sends disabled. Mixer patching is configured separately by the operator.
 
-Run `reaper --detect` to inspect the automatic device selection without starting REAPER. Use `reaper --device cq`, an exact ID such as `reaper --device hw:CQ12T`, or `reaper --channels 2` to override selection or channel count. `DEFEEDBACK_DEVICE` and `DEFEEDBACK_CHANNELS` provide the same overrides for desktop and service environments. Explicit REAPER arguments are forwarded after device configuration. `reaper --raw` bypasses automatic selection and retains the earlier saved-preferences launch behavior for manual setup and AES67 testing.
+Run `reaper --detect` to inspect the automatic device selection without starting REAPER. Use `reaper --device cq`, an exact ID such as `reaper --device hw:CQ12T`, or `reaper --channels 2` to override selection or channel count. `DEFEEDBACK_DEVICE` and `DEFEEDBACK_CHANNELS` provide the same overrides for desktop and service environments. Explicit REAPER arguments are forwarded after device configuration. `reaper --raw` bypasses automatic selection and uses saved REAPER preferences.
 
-The launcher holds a per-user lock while REAPER runs, preventing simultaneous desktop and service launches from changing the same preferences. Selection and launch errors are recorded in `~/.local/state/defeedback/reaper-launch.log`. Template generation and mono validation are recorded beside the generated project in its `.RPP.log` file. XDG configuration and state directory overrides are honored.
+Selection and launch errors are recorded in `~/.local/state/defeedback/reaper-launch.log`. Template generation and mono validation are recorded beside the generated project in its `.RPP.log` file. XDG configuration and state directory overrides are honored.
 
 With no matching USB device, the default `--missing-audio skip` logs the reason and exits successfully without starting REAPER. Use `--missing-audio error` or `DEFEEDBACK_MISSING_AUDIO=error` for an error exit instead. `--detect` reports missing devices as errors. Ambiguous devices and invalid routing remain errors. `--raw` bypasses automatic USB checks.
 
@@ -137,6 +133,8 @@ AES67 is started manually after network and PTP checks; see [AES67 setup](aes67.
 
 
 ## Update the workstation
+
+Use `defeedback update` to fetch and apply project code on the device, or `defeedback update --reaper` to also update REAPER. See [Git update behavior](commands.md#git-updates-on-the-device). The commands below apply a bundle you have already updated manually.
 
 Close REAPER, then run `bash update-defeedback.sh` from the updated bundle on the Linux computer. The default selects the current stable release from the official REAPER download page, verifies its published SHA-256, and updates REAPER plus the hardware-aware launcher, template action, and supplied template resources. The updater targets REAPER 7.x and requires at least 7.43 for automatic mono bus requests. Check license coverage before selecting a different major version. See the [REAPER changelog](https://www.reaper.fm/download-old.php?ver=7x).
 

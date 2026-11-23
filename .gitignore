@@ -6,3 +6,7 @@
 
 # macOS metadata sidecars
 ._*
+
+# Python bytecode
+__pycache__/
+*.py[cod]

@@ -1,6 +1,6 @@
 # Alpha Labs De-Feedback on Linux
 
-Run the Windows De-Feedback VST3 with native Linux REAPER, yabridge, and a Wine build with Direct2D and DirectComposition patches. Start with a Focusrite Scarlett over USB at 48 kHz. The setup also includes REAPER mono routing templates for up to eight independent paths. Five mono paths have been validated on CQ12T; the eight-path configuration is pending an AES67 test.
+Run the Windows De-Feedback VST3 with native Linux REAPER, yabridge, and a Wine build with Direct2D and DirectComposition patches. Start with a Focusrite Scarlett over USB at 48 kHz. Mono routing templates support up to eight independent paths.
 
 USB audio has been tested with the interfaces listed below. AES67 audio and eight simultaneous mono paths still require hardware validation.
 
@@ -18,7 +18,7 @@ flowchart LR
 
 The reference system is a **Beelink EQ12** with a 12th Gen Intel Alder Lake-N100 processor (4 cores, 4 threads, up to 3.40 GHz), 16 GB DDR5 RAM, a 500 GB SSD, and two Intel i226 2.5 GbE network interfaces.
 
-USB audio hardware used in testing: Focusrite Scarlett Solo 3rd Gen, Audient EVO8, Behringer U-PHORIA UMC202HD, Allen & Heath SQ, and Allen & Heath CQ12T. Test outcomes and settings are recorded in [setup and operation](setup.md#first-audio-test-with-focusrite); inclusion here does not mean every channel configuration has been validated.
+Tested USB hardware: Focusrite Scarlett Solo 3rd Gen, Audient EVO8, Behringer U-PHORIA UMC202HD, Allen & Heath SQ, and Allen & Heath CQ12T. See [validated channel counts and settings](setup.md#first-audio-test-with-focusrite).
 
 Focusrite Scarlett is the default interface for this Linux project. Alpha Labs recommends Focusrite Scarlett for its Windows setup; this does not constitute vendor validation of the Linux configuration. [Alpha Labs hardware guidance](https://alphalabsaudio.com/defeedback/)
 
@@ -37,8 +37,8 @@ Copy the [Linux bundle](../defeedback-linux/) to Ubuntu Studio and follow [setup
 - For a PipeWire test, check `RATE` and `QUANT` on the active driver row in `pw-top`. Press `c` at the start of each run and monitor `ERR`. For direct ALSA, check the active format in REAPER and listen to or record the physical output. [PipeWire `pw-top`](https://docs.pipewire.org/devel/page_man_pw-top_1.html)
 - Test the chosen setting for at least **30 minutes**, monitor glitches, and repeat after a cold boot. Record the audio backend, software versions, channel count, rate, buffer, and latency. Measure bypass and active processing separately; do not treat a block duration as round-trip latency.
 
-## Optional network test with Avantis and AES67
+## Optional AES67 test
 
-This setup already uses Dante at 48 kHz, with Sennheiser EW-DX as the source and Martin Audio as the output. Use the same sample rate for the AES67 streams and REAPER project. The Avantis processes audio internally at 96 kHz, and the Dante card uses 48 kHz for AES67. [Allen & Heath Dante 64×64](https://www.allen-heath.com/hardware/audio-networking/dante-64x64/) · [Allen & Heath on AES67 and sample rates](https://support.allen-heath.com/hc/en-gb/articles/23638561086353-SMPTE-ST-2110)
+The reference console is an **Allen & Heath Avantis Solo** with an **Allen & Heath Dante 64 V3** card. Use Dante/AES67 at **48 kHz**, matching the REAPER project.
 
-The planned reference loop is EW-DX → Avantis → Linux De-Feedback inserts → Avantis → Martin Audio. Follow [AES67 setup and testing](aes67.md); measure this loop separately from the Scarlett USB result.
+The planned insert loop is Avantis Solo → AES67 → Linux De-Feedback → AES67 → Avantis Solo. Follow [AES67 setup and testing](aes67.md). This audio path has not yet been validated on hardware.

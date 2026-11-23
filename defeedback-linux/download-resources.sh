@@ -4,7 +4,7 @@ set -euo pipefail
 export LC_ALL=C
 
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-source "$bundle_dir/src/apt-packages.sh"
+source "$bundle_dir/lib/apt-packages.sh"
 
 usage() {
     printf '%s\n' 'Usage: bash download-resources.sh [--config FILE] [--output DIR] [--only RESOURCE] [--apt] [--open-manual]' \

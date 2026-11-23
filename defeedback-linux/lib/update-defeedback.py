@@ -5,6 +5,7 @@ from datetime import datetime
 import fcntl
 import hashlib
 import html
+import json
 import logging
 import os
 from pathlib import Path, PurePosixPath
@@ -20,13 +21,18 @@ from urllib.request import urlopen
 
 BUNDLE = Path(__file__).resolve().parent.parent
 RESOURCES = {
-    'src/reaper': 'bin/reaper',
-    'src/reaper-launch.py': 'bin/reaper-launch.py',
-    'projects/create-template.lua': 'projects/create-template.lua',
-    'projects/defeedback-2ch.RPP': 'projects/defeedback-2ch.RPP',
-    'projects/reaper-cq12t.ini': 'projects/reaper-cq12t.ini',
-    'projects/reaper-evo8.ini': 'projects/reaper-evo8.ini',
+    'defeedback': 'bin/defeedback',
+    'lib/cli.py': 'lib/cli.py',
+    'lib/open-license-gui.sh': 'lib/open-license-gui.sh',
+    'config/resources.conf': 'config/resources.conf',
+    'lib/reaper': 'bin/reaper',
+    'lib/reaper-launch.py': 'bin/reaper-launch.py',
+    'reaper/create-template.lua': 'reaper/create-template.lua',
+    'reaper/plugin-state.RPP': 'reaper/plugin-state.RPP',
 }
+for tool in ('check-audio.sh', 'diagnose.sh', 'install-aes67.sh', 'setup-aes67.sh',
+             'setup-appliance.sh', 'trim-workstation.sh'):
+    RESOURCES['tools/' + tool] = 'tools/' + tool
 
 
 def version(filename):
@@ -120,7 +126,7 @@ def atomic_copy(source, target):
 def install(runtime, installed, app, backup):
     # Snapshot integration files before changing either component.
     originals = {}
-    for relative, target in RESOURCES.items():
+    for target in [*RESOURCES.values(), 'installation.json']:
         destination = app / target
         if destination.exists():
             original = backup / 'integration' / target
@@ -133,6 +139,8 @@ def install(runtime, installed, app, backup):
     moved_old = False
     installed_new = False
     changed = []
+    link = Path.home() / ".local/bin/defeedback"
+    link_created = False
     try:
         if runtime:
             installed.rename(old_runtime)
@@ -142,7 +150,27 @@ def install(runtime, installed, app, backup):
         for relative, target in RESOURCES.items():
             atomic_copy(BUNDLE / relative, app / target)
             changed.append(target)
+        revision = None
+        if shutil.which('git'):
+            result = subprocess.run(['git', '-C', str(BUNDLE), 'rev-parse', 'HEAD'],
+                                    text=True, capture_output=True)
+            if result.returncode == 0:
+                revision = result.stdout.strip()
+        with tempfile.TemporaryDirectory(prefix='.metadata-', dir=app) as temporary:
+            metadata = Path(temporary) / 'installation.json'
+            metadata.write_text(json.dumps({'revision': revision}) + '\n')
+            atomic_copy(metadata, app / 'installation.json')
+            changed.append('installation.json')
+        link = Path.home() / '.local/bin/defeedback'
+        link.parent.mkdir(parents=True, exist_ok=True)
+        if not link.exists() and not link.is_symlink():
+            link.symlink_to(app / 'bin/defeedback')
+            link_created = True
+        elif not link.is_symlink() or link.resolve() != (app / 'bin/defeedback').resolve():
+            logging.warning('Keeping existing command %s; use %s.', link, app / 'bin/defeedback')
     except BaseException:
+        if link_created:
+            link.unlink(missing_ok=True)
         for target in reversed(changed):
             if originals[target]:
                 atomic_copy(originals[target], app / target)

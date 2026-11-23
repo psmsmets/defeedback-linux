@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+"""De-Feedback workstation command."""
+from pathlib import Path
+import sys
+
+location = Path(__file__).resolve().parent
+root = location.parent if location.name == 'bin' else location
+sys.path.insert(0, str(root / 'lib'))
+from cli import main
+
+if __name__ == '__main__':
+    sys.exit(main())

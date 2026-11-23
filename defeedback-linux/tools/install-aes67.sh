@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Install optional AES67 dependencies without requiring an active audio network.
 set -euo pipefail
+if [[ ${1:-} == --help || ${1:-} == -h ]]; then
+    printf 'Usage: defeedback aes67 install\nInstall optional AES67 packages on Ubuntu Studio.\n'
+    exit 0
+fi
+[[ $# == 0 ]] || { printf 'No arguments expected.\n' >&2; exit 2; }
 [[ $(uname -s) == Linux ]] || { printf 'Run this on Ubuntu Studio.\n' >&2; exit 1; }
 (( EUID != 0 )) || { printf 'Run as your desktop user without sudo.\n' >&2; exit 1; }
 sudo apt-get update
