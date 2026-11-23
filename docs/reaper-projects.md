@@ -20,7 +20,7 @@ The script needs `plugin-state.RPP` beside it as the source of plugin state. Set
 
 Each path has one De-Feedback instance, explicitly checked for one input and one output, and one mono hardware send. Master sends are disabled. Tracks start **unmuted, with monitoring and FX enabled**. Keep console inserts bypassed until routing is verified; bypass FX for baseline latency measurements. The project rate is 48000 Hz. Audio-device selection and console/network patching are separate from the template.
 
-The upper limit is **eight mono paths**. Four stereo instances were stable, and mono operation approximately halved CPU load. Eight-mono stability will be tested using AES67. See [test hardware and measurements](overview.md).
+The upper limit is **eight mono paths**; see [validation status](overview.md#validation-status) for tested capacity.
 
 ## CQ signal flow and channel mapping
 

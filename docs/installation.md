@@ -27,7 +27,7 @@ The script reads [the resource manifest](../defeedback-linux/config/resources.co
 
 Download the Windows De-Feedback installer and optional VSTHost x64 archive manually in your browser. On the Alpha Labs download page, read the terms, privacy policy, and FAQs. Check the three acknowledgements yourself to enable the download. Pass `--open-manual` to the downloader to open the page in your default browser. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/)
 
-Place the Windows installer at `packages/DefeedbackSetup.exe`. The installer also presents the license terms during setup. For private use with the supplied edition, place its complete folder in `packages/vsthostx64/`, including the executable, license and Data folder. See [Alpha Labs downloads and terms](https://alphalabsaudio.com/defeedback/) and the [REAPER distribution agreement](https://www.reaper.fm/dist-agreement.php). Keep vendor installers local and retain their license files.
+Place the Windows installer at `packages/DefeedbackSetup.exe`. The installer also presents the license terms during setup. For optional license management, place the complete VSTHost folder in `packages/vsthostx64/`, including the executable, license and Data folder. Keep vendor installers local and retain their license files.
 
 ## Change the selected versions
 
@@ -62,4 +62,4 @@ Offline setup uses the prepared local archives and can build Wine from the local
 | De-Feedback and yabridge | Updates `~/.wine-defeedback`, installs the plugin when needed, and registers it with yabridge. The bridge lives in `~/.local/share/yabridge` and creates wrappers under `~/.vst3/yabridge`. |
 | Launchers and routing | Installs launchers and mono template resources under `~/.local/share/defeedback`, links commands in `~/.local/bin`, and creates application menu and desktop entries. Setup adds `~/.local/bin` to the shell startup file if needed. VSTHost is installed when its local folder is present. |
 | Optional `--appliance` | Configures SDDM autologin, the systemd user service for REAPER, Plasma desktop and power settings, system sleep and power-button behavior, and disables ModemManager and CUPS. See [workstation startup](setup.md#dedicated-workstation-startup). |
-| Optional AES67 | Run `tools/install-aes67.sh`, then `tools/setup-aes67.sh` for network, PTP access, and PipeWire configuration. See [AES67 setup](aes67.md). |
+| Optional AES67 | Run `defeedback-linux aes67 install`, then `defeedback-linux aes67 setup` for network, PTP access, and PipeWire configuration. See [AES67 setup](aes67.md). |

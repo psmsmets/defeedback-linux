@@ -42,19 +42,7 @@ The Scarlett Solo 3rd Gen measured **8.1 ms round-trip latency with De-Feedback 
 
 If De-Feedback is not found, scan `~/.vst3` under **Plug-ins → VST**. Use the generated mono project, bypass its FX for the initial routing check, then enable De-Feedback.
 
-Tested USB hardware is listed below. The common ALSA configuration is **48 kHz, 24-bit, 64 samples, and 3 periods**. Use the detected card ID for input and output.
-
-| Interface | ALSA device | Test status and settings |
-| --- | --- | --- |
-| Focusrite Scarlett Solo 3rd Gen | Detected Scarlett card ID | 2 mono instances tested; 64 samples |
-| Audient EVO8 | `hw:EVO8` | 4 mono instances tested; 64 samples; smaller blocks caused audible clicks |
-| Allen & Heath SQ USB-B | `hw:SQ` | USB audio successfully tested; eight-mono operation remains unvalidated |
-| Allen & Heath CQ12T USB-B | `hw:CQ12T` | 5 mono instances successfully tested; 64 samples |
-| Behringer U-PHORIA UMC202HD | `hw:U192k` | 2 mono instances tested; 64 samples |
-
-CQ12T uses five tested mono paths: inputs **6–10 → outputs 1–5**. The processed returns use separate CQ channels with **USB/SD** as their source. Keep dry channels out of the listening mix and keep return channels out of the USB sends feeding REAPER. See [channel mappings](reaper-projects.md#cq-signal-flow-and-channel-mapping).
-
-The software limit is **eight mono paths**. Four stereo instances were stable, and mono operation approximately halved CPU load. Eight mono instances remain an expectation to validate with AES67. QU, CQ18T/CQ20B, Avantis, and dLive configurations have not been validated on hardware.
+See [test hardware and validation status](overview.md#validation-status) for confirmed channel counts. The common USB configuration is **48 kHz, 24-bit, 64 samples, and 3 periods**. CQ12T uses five tested paths, inputs **6–10 → outputs 1–5**; see [console routing](reaper-projects.md#cq-signal-flow-and-channel-mapping).
 
 ## Mono routing templates
 
@@ -77,7 +65,7 @@ sudo systemctl unmask cups.service cups.socket cups.path cups-browsed.service
 sudo systemctl unmask ModemManager.service
 ```
 
-Reboot when ready and verify that the desktop and REAPER appear. Check the REAPER service with `systemctl --user status defeedback-reaper.service` and its boot log with `journalctl --user -u defeedback-reaper.service -b`. Test the physical power button after saving the project.
+Reboot when ready and verify that the desktop and REAPER appear. Check the REAPER service with `systemctl --user status defeedback-reaper.service` and its boot log with `journalctl --user -u defeedback-reaper.service -b`. See [service status and troubleshooting](logging.md#check-the-autostart-service) for the status commands and their meaning. Test the physical power button after saving the project.
 
 To stop REAPER from starting at login, run `systemctl --user disable defeedback-reaper.service`. To turn off automatic login, run `sudo kwriteconfig6 --file /etc/sddm.conf --group Autologin --key User ""`. Setup saves an existing `/etc/sddm.conf` to `/etc/sddm.conf.before-defeedback` on the first run. To restore the system sleep and power-button defaults, remove the `90-defeedback-appliance.conf` files from `/etc/systemd/sleep.conf.d/` and `/etc/systemd/logind.conf.d/`, then reboot. Adjust the corresponding desktop preferences in Plasma System Settings.
 
@@ -104,11 +92,11 @@ If extraction under Wine fails, run the official installer on Windows, review th
 
 ## License management in VSTHost
 
-Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. The supplied package terms limit VSTHost to private use. The `defeedback-linux license-gui` command and VSTHost desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**.
+Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. License activation on Linux remains untested; see [validation status](overview.md#validation-status). The `defeedback-linux license-gui` command and VSTHost desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**.
 
 ## Automatic USB startup
 
-Rerun `bash setup-defeedback.sh` from the updated bundle on the Linux computer to install the hardware-aware launcher, source project, template action. Use `--appliance` to also enable automatic login and REAPER startup. Existing desktop and applications-menu shortcuts point to the installed `reaper` wrapper and run the same detection as `defeedback-reaper.service`.
+The installed launcher selects the device and loads its routing template. Use `--appliance` to also enable automatic login and REAPER startup. The desktop shortcut, `defeedback-linux`, and `defeedback-reaper.service` use the same USB selection logic.
 
 | Detected device | Default mono paths | Input → output mapping |
 | --- | --- | --- |
@@ -125,7 +113,7 @@ The launcher configures ALSA at 48000 Hz, 24-bit, 64 samples, 3 periods, and RT 
 
 On first launch, REAPER runs the template action without prompts and saves `~/.local/state/defeedback/defeedback-DEVICE-Nch.RPP`. Each plugin is configured and checked for one input and one output before the next instance is created. Subsequent launches reopen that saved project and check mono I/O. Move the saved project aside to regenerate it from the source. Generated tracks have active FX and monitoring, are unmuted, and have their master sends disabled. Mixer patching is configured separately by the operator.
 
-Run `reaper --detect` to inspect the automatic device selection without starting REAPER. Use `reaper --device cq`, an exact ID such as `reaper --device hw:CQ12T`, or `reaper --channels 2` to override selection or channel count. `DEFEEDBACK_DEVICE` and `DEFEEDBACK_CHANNELS` provide the same overrides for desktop and service environments. Explicit REAPER arguments are forwarded after device configuration. `reaper --raw` bypasses automatic selection and uses saved REAPER preferences.
+Run `defeedback-linux --detect` to inspect the automatic device selection without starting REAPER. Use `defeedback-linux --device cq`, an exact ID such as `defeedback-linux --device hw:CQ12T`, or `defeedback-linux --channels 2` to override selection or channel count. `DEFEEDBACK_DEVICE` and `DEFEEDBACK_CHANNELS` provide the same overrides for desktop and service environments. Explicit REAPER arguments are forwarded after device configuration. `defeedback-linux --raw` bypasses automatic selection and uses saved REAPER preferences.
 
 Launcher events, REAPER output, and process status are saved as bounded session logs under `~/.local/state/defeedback/logs/`. Template/version/mono-validation messages use rotating `template-DEVICE-Nch.log` files there. Use `defeedback-linux logs --list` to find current and older logs. XDG configuration and state directory overrides are honored. See [logging](logging.md).
 
@@ -140,7 +128,7 @@ Use `defeedback-linux update` to fetch and apply project code on the device, or 
 
 Close REAPER, then run `bash update-defeedback.sh` from the updated bundle on the Linux computer. The default selects the current stable release from the official REAPER download page, verifies its published SHA-256, and updates REAPER plus the hardware-aware launcher, template action, and supplied template resources. The updater targets REAPER 7.x and requires at least 7.43 for automatic mono bus requests. Check license coverage before selecting a different major version. See the [REAPER changelog](https://www.reaper.fm/download-old.php?ver=7x).
 
-Use `bash update-defeedback.sh --check` to inspect the selected release, `--pinned` to install the manifest version, or `--integration-only` to update just the launcher and templates. For an offline REAPER update, pass `--archive /path/to/reaper786_linux_x86_64.tar.xz --sha256 PUBLISHED_SHA256`; the checksum may be omitted only when the archive filename matches the manifest entry. Selecting `--pinned` or a local archive installs that selected version, which can also be used for a deliberate downgrade.
+Use `bash update-defeedback.sh --check` to inspect the selected release, `--pinned` to install the manifest version, or `--integration-only` to update just the launcher and templates. For an offline REAPER update, pass `--archive /path/to/reaperVERSION_linux_x86_64.tar.xz --sha256 PUBLISHED_SHA256`; the checksum may be omitted only when the archive filename matches the manifest entry. Selecting `--pinned` or a local archive installs that selected version, which can also be used for a deliberate downgrade.
 
 Updates use the same locks as setup and the REAPER launcher and require REAPER to be closed. Before replacing files, the updater copies the REAPER resource directory, generated projects, and existing integration files into a timestamped directory under `${XDG_STATE_HOME:-$HOME/.local/state}/defeedback/`, with an `update.log`. The previous runtime remains beside the installed runtime as `~/.local/opt/REAPER.before-update-TIMESTAMP-ID`. An installation failure restores the runtime and any integration files already changed. The existing desktop shortcut continues to call the same launcher path. Plugin, Wine, and yabridge version changes remain separate maintenance operations.
 

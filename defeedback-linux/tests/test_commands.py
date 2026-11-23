@@ -63,6 +63,16 @@ class Commands(unittest.TestCase):
             self.assertIn('alsa_indev=hw:CQ12T', target.read_text())
             self.assertIn('linux_audio_bsize=64', target.read_text())
 
+    def test_detect_prints_selection_without_launching(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(Path, 'home', return_value=Path(directory)), \
+                patch.dict(os.environ, {'XDG_STATE_HOME': directory}), \
+                patch.object(launcher, 'detect_cards', return_value=[dict(id='EVO8', family='evo8', inputs=4, outputs=4)]), \
+                patch.object(launcher.subprocess, 'Popen') as launch, \
+                patch('sys.argv', ['reaper', '--detect']), contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(launcher.main(), 0)
+            self.assertIn('Selected hw:EVO8 (evo8): 4 mono paths', output.getvalue())
+            launch.assert_not_called()
+
     def test_installation_and_rollback(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(Path, 'home', return_value=Path(directory)):
             home = Path(directory)

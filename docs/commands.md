@@ -76,7 +76,7 @@ From an updated Linux bundle, with REAPER closed:
 bash update-defeedback.sh --integration-only
 ```
 
-This installs `~/.local/bin/defeedback-linux` and its supporting files. The previous `defeedback` symlink is removed only if it points to this project; unrelated commands are preserved. Open a new terminal if that directory was not already on PATH. If Git is missing on an existing workstation, install it with `sudo apt-get install git` before the first device-side update. Fresh setup installs Git as a runtime dependency.
+This installs `~/.local/bin/defeedback-linux` and its supporting files. Open a new terminal if that directory was not already on PATH. If Git is missing on an existing workstation, install it with `sudo apt-get install git` before the first device-side update. Fresh setup installs Git as a runtime dependency.
 
 `bash update-defeedback.sh` remains available for updating REAPER and integration from a manually updated bundle. `--integration-only` applies local code without a network fetch; `--archive` supports a local REAPER archive. See [updates](setup.md#update-the-workstation).
 

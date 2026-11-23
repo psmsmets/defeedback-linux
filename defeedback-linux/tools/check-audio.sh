@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    printf 'Usage: bash check-audio.sh [focusrite|sq|cq|avantis|dlive] [--launch]\n'
+    printf 'Usage: defeedback-linux check [focusrite|sq|cq|avantis|dlive] [--launch]\n'
     printf 'The default profile is focusrite. Use --launch as the second argument to start REAPER.\n'
 }
 
@@ -27,7 +27,7 @@ if [[ ${1:-focusrite} == focusrite ]]; then
 elif [[ ${1:-focusrite} == cq ]]; then
     printf 'Select the CQ for ALSA capture and playback in REAPER. CQ12T uses hw:CQ12T. Use 48000 Hz, 64 samples, 24-bit, and 3 periods. Confirm the device identifier on other CQ models.\n'
 elif [[ $transport == usb ]]; then
-    printf 'Select this USB interface for ALSA capture and playback in REAPER. Start at 48 kHz and 128 samples.\n'
+    printf 'Select this USB interface for ALSA capture and playback in REAPER. Use 48000 Hz, 64 samples, 24-bit, and 3 periods.\n'
 else
     printf 'Use the configured PipeWire clock: 48 kHz, quantum 48 by default; select another supported quantum through setup-aes67.sh.\n'
 fi
@@ -76,7 +76,7 @@ sys.exit(0 if ready else 1)
         printf 'AES67 startup skipped: no AES67 source and return available. Start PTP and the AES67 helper first.\n'
         exit 0
     fi
-    # Use the clock configured by setup-aes67.sh; do not override it with 128 samples.
+    # Use the PipeWire clock configured by setup-aes67.sh.
     export DEFEEDBACK_TRANSPORT=aes67
     exec pw-jack "$reaper" --raw
 fi

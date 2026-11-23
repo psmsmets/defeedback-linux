@@ -22,6 +22,16 @@ Tested USB hardware: Focusrite Scarlett Solo 3rd Gen, Audient EVO8, Behringer U-
 
 Focusrite Scarlett is the default interface for this Linux project. Alpha Labs recommends Focusrite Scarlett for its Windows setup; this does not constitute vendor validation of the Linux configuration. [Alpha Labs hardware guidance](https://alphalabsaudio.com/defeedback/)
 
+## Validation status
+
+| Area | Status |
+| --- | --- |
+| USB audio | Scarlett Solo 3rd Gen: 2 mono instances; UMC202HD: 2; EVO8: 4; CQ12T: 5. SQ USB audio tested; eight-mono operation not validated. |
+| Capacity | Four stereo instances ran stably. Mono operation approximately halved CPU load, supporting an eight-mono expectation; eight is the software limit and remains untested. |
+| Plugin license | Tests use the trial. The license window opens; paid-license activation on Linux is untested. |
+| AES67 | Prepared for Avantis Solo with Dante 64 V3; audio and latency tests pending. |
+| Unattended live operation | USB startup selection is implemented. AES67 autostart and automatic recovery are not implemented; monitor-free boot remains unvalidated. See [startup](setup.md#dedicated-workstation-startup). |
+
 ## Prepare Ubuntu Studio
 
 Use **Ubuntu Studio 26.04.1 LTS, amd64**, with its Plasma desktop. Download the ISO and verify its checksum from the [official release directory](https://cdimage.ubuntu.com/ubuntustudio/releases/resolute/release/). Write it to a USB drive of at least 8 GB with [balenaEtcher](https://etcher.balena.io/), boot the Beelink from USB, and choose **Minimal installation**. Writing the image erases the USB drive; installation erases the selected target disk.

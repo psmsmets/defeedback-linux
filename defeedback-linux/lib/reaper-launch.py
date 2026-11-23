@@ -208,6 +208,9 @@ def main():
                 logger.info('Selected hw:%s (%s), %s mono paths, inputs %s–%s to outputs 1–%s; 48000 Hz, 24-bit, 64 samples, 3 periods.',
                              card['id'], card['family'], count, first_input, first_input + count - 1, count)
                 if args.detect:
+                    print(('Selected hw:%s (%s): %s mono paths, inputs %s–%s to outputs 1–%s; '
+                           '48000 Hz, 24-bit, 64 samples, 3 periods.') %
+                          (card['id'], card['family'], count, first_input, first_input + count - 1, count))
                     return 0
                 resource = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'REAPER'
                 source = app / 'reaper'

@@ -2,6 +2,24 @@
 
 All logging is text-only. Normal operation records startup, selected audio device/settings, process output, failures, exit status, and one process-alive message per minute. No audio files are created by logging or debug mode. The optional `diagnose --usb-card` probe opens PCM capture but discards it to `/dev/null`; it is never run automatically and requires REAPER to be closed.
 
+## Check the autostart service
+
+Run these commands as the workstation user, without sudo. The REAPER user service is installed by `defeedback-linux appliance setup`; a normal installation does not enable autostart.
+
+| Command | What it shows |
+| --- | --- |
+| `systemctl --user status defeedback-reaper.service` | Service state, process details, and a few recent messages; press `q` to leave the pager |
+| `systemctl --user is-active defeedback-reaper.service` | Only the state, such as `active`, `inactive`, or `failed`; a non-active state returns a nonzero exit code |
+| `defeedback-linux logs --journal` | The newest application log plus recent REAPER, PipeWire, and WirePlumber user-service messages |
+
+Start with service status if audio did not start automatically. An active service confirms that its process is running, not that audio or routing is correct. A disabled unit may still be running if started manually; an inactive unit is not necessarily a crash. If the unit is not found, appliance setup may not have been run. With no matching USB device, the launcher intentionally exits successfully, so the service can become inactive without failing.
+
+`logs --journal` does not dump the entire history: it shows up to 100 lines from the newest application log and up to 100 journal lines across the selected services combined. Use `defeedback-linux logs --journal --lines 30` for a shorter view. For only this service's messages from the current boot, use:
+
+```bash
+journalctl --user -u defeedback-reaper.service -b -n 100 --no-pager
+```
+
 ## Read logs
 
 ```bash

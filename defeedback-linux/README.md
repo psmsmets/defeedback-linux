@@ -13,26 +13,19 @@ defeedback-linux
 
 Focusrite Scarlett USB is the default. The limit is eight mono paths; eight-mono operation and AES67 audio remain unvalidated.
 
-The goal is headless operation with the correct settings loaded at boot for USB or AES67 on the second network port. USB selection is implemented; automatic AES67 startup is planned. REAPER still runs in an automatically logged-in graphical session; monitor-free boot requires validation.
+The goal is headless operation with the correct settings loaded at boot for USB or AES67 on the second network port. USB selection is implemented; automatic AES67 startup is planned. With appliance setup enabled, REAPER runs in an automatically logged-in Plasma session; monitor-free boot remains unvalidated.
 
 ## Daily use
 
 ```bash
-defeedback-linux --help
-defeedback-linux update
-defeedback-linux license-gui
+defeedback-linux
 defeedback-linux check
-defeedback-linux diagnose
-defeedback-linux logs
-defeedback-linux logs --list
-defeedback-linux aes67 install
-defeedback-linux aes67 setup
-defeedback-linux aes67 ptp
-defeedback-linux aes67 audio
-defeedback-linux ini --device evo8
-defeedback-linux appliance setup
-defeedback-linux trim --check
+defeedback-linux logs --journal
+defeedback-linux update
+defeedback-linux --help
 ```
+
+For licensing, AES67, appliance setup, cleanup, and INI generation, see the [command reference](../docs/commands.md).
 
 For extra text diagnostics, add `--debug` to a command. Logs are bounded; no audio is recorded. See [logging](../docs/logging.md).
 
