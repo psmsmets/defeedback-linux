@@ -29,7 +29,7 @@ elif [[ ${1:-focusrite} == cq ]]; then
 elif [[ $transport == usb ]]; then
     printf 'Select this USB interface for ALSA capture and playback in REAPER. Start at 48 kHz and 128 samples.\n'
 else
-    printf 'Start at 48 kHz and 128 samples.\n'
+    printf 'Use the configured PipeWire clock: 48 kHz, quantum 48 by default or 64 for testing.\n'
 fi
 printf 'Test one mono path in bypass first.\n'
 
@@ -76,5 +76,6 @@ sys.exit(0 if ready else 1)
         printf 'AES67 startup skipped: no AES67 source and return available. Start PTP and the AES67 helper first.\n'
         exit 0
     fi
-    exec env PIPEWIRE_QUANTUM=128/48000 pw-jack "$reaper" --raw
+    # Use the clock configured by setup-aes67.sh; do not override it with 128 samples.
+    exec pw-jack "$reaper" --raw
 fi
