@@ -4,11 +4,17 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: bash open-license-gui.sh [--virtual-desktop] [/path/to/vsthost.exe]
+Usage: defeedback-linux open-license-gui [--virtual-desktop] [/path/to/vsthost.exe]
+
+Alias: defeedback-linux license-gui
 
 Opens the installed De-Feedback VST3 in 64-bit VSTHost without an audio
 driver. If no path is given, use the installed VSTHost, then check the
 bundled packages and installers directories. Close REAPER and VSTHost first.
+
+Open the De-Feedback editor, then Options > License Management. Follow
+the regular De-Feedback / Alpha Labs activation steps for Windows there.
+Paid-license activation on Linux remains untested.
 EOF
 }
 
@@ -62,6 +68,7 @@ windows_plugin="C:\\${plugin_relative//\//\\}"
 
 printf '%s\n' 'In the De-Feedback box, click the plug-in edit dial next to the blue info icon.' \
     'Open Options > License Management in the plug-in. Enter your credentials there and click Activate.' \
+    'Follow the regular De-Feedback / Alpha Labs activation steps for Windows in that window.' \
     'Wait for the activation prompts to finish before closing the window.'
 cd -- "$(dirname -- "$vsthost")"
 host_args=(/noaudio /nomidi /noload /nosave "$windows_plugin")

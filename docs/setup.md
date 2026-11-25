@@ -52,7 +52,13 @@ The launcher uses `reaper/create-template.lua` to create a mono project for the 
 
 The goal is headless operation with audio settings selected at boot for the connected USB interface or AES67 on the second NIC. USB selection is implemented; automatic AES67 startup remains planned. A graphical Plasma session is still required. Boot without a monitor has been validated on the reference Beelink. Paid-license activation remains untested.
 
-Run `bash setup-defeedback.sh --appliance` from the Ubuntu Studio Plasma desktop to install De-Feedback and configure startup. If REAPER is already installed, run `defeedback-linux appliance setup` to configure it separately. Normal installation does not enable appliance settings. Use the account that should log in automatically. Anyone with physical access can use this desktop after boot.
+Installation and boot startup are separate steps. First run `bash setup-defeedback.sh` from the Linux bundle directory. After installation, optionally enable desktop autologin and REAPER autostart:
+
+```bash
+defeedback-linux appliance setup
+```
+
+For a new workstation, `bash setup-defeedback.sh --appliance` installs De-Feedback and configures startup in one step. Normal installation and updates do not enable appliance settings. An existing installation can run `defeedback-linux appliance setup` directly. Use the account that should log in automatically, from its Ubuntu Studio Plasma desktop. Anyone with physical access can use this desktop after boot.
 
 SDDM signs in to the current Plasma session type at boot. The systemd user service waits three seconds and calls the same hardware-aware launcher as the desktop shortcut. The launcher waits up to ten seconds for a recognized USB capture/playback device, selects its ALSA preferences, and creates or reopens its mono project. A graphical user session is still required for REAPER and the plugin; startup runs without interaction after automatic login. See [automatic USB startup](#automatic-usb-startup).
 
@@ -112,7 +118,14 @@ If extraction under Wine fails, run the official installer on Windows, review th
 
 ## License management in VSTHost
 
-Use the supplied full 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. License activation on Linux remains untested; see [validation status](overview.md#validation-status). The `defeedback-linux license-gui` command and VSTHost desktop shortcut open De-Feedback without audio using the permanent Wine prefix. Close REAPER first. Click the plug-in edit dial, then **Options → License Management**.
+To activate De-Feedback, use the complete 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. If VSTHost is not installed, add that folder to the Linux bundle and rerun `bash setup-defeedback.sh`.
+
+1. Close REAPER and VSTHost, then run `defeedback-linux open-license-gui` from the Ubuntu Studio desktop terminal. This opens De-Feedback in VSTHost without audio, using the permanent Wine prefix shared with REAPER.
+2. Click the plug-in edit dial to open the De-Feedback editor, then select **Options → License Management**.
+3. Follow the regular **De-Feedback / Alpha Labs activation steps for Windows** in that window. Enter the credentials requested by Alpha Labs there and complete the activation prompts. The Linux command opens the interface; activation is handled by De-Feedback itself. See [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/) for vendor instructions and support.
+4. Wait for the activation prompts to finish, close VSTHost, and start REAPER with `defeedback-linux`.
+
+The VSTHost desktop shortcut opens the same permanent prefix. Paid-license activation on Linux remains untested; see [validation status](overview.md#validation-status). REAPER requires its own separate license.
 
 ## Automatic USB startup
 

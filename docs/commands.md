@@ -6,6 +6,8 @@ Products and licensing: [REAPER](https://www.reaper.fm/purchase.php) · [Alpha L
 
 After installing or updating the integration, use `defeedback-linux` from any directory. It uses Python's standard library; no Typer or pip installation is required.
 
+For a new workstation, first run `bash setup-defeedback.sh` from the Linux bundle directory. After installation, optionally run `defeedback-linux appliance setup` to enable desktop autologin and REAPER autostart. To do both in one step, run `bash setup-defeedback.sh --appliance`. Updating an existing installation does not require repeating setup and does not enable autostart.
+
 | Command | Purpose |
 | --- | --- |
 | `defeedback-linux` | Start REAPER with the connected USB device |
@@ -15,7 +17,7 @@ After installing or updating the integration, use `defeedback-linux` from any di
 | `defeedback-linux update` | Fetch project code and install the integration |
 | `defeedback-linux update --check` | Fetch and compare revisions without activating an update |
 | `defeedback-linux update --reaper` | Also update the REAPER runtime |
-| `defeedback-linux license-gui` | Open license management in VSTHost |
+| `defeedback-linux open-license-gui` | Open De-Feedback in VSTHost for license activation |
 | `defeedback-linux aes67 install` | Install optional AES67 packages |
 | `defeedback-linux aes67 setup` | Configure the AES67 network, PTP access, and PipeWire |
 | `defeedback-linux aes67 enable --reaper-ini PATH` | Enable experimental early fallback using saved JACK preferences |
@@ -36,6 +38,10 @@ After installing or updating the integration, use `defeedback-linux` from any di
 | `defeedback-linux logs --all --journal` | Read log tails and user service messages |
 | `defeedback-linux --debug` | Start REAPER with additional text diagnostics |
 | `defeedback-linux --help` | Show commands |
+
+`defeedback-linux license-gui` remains an alias for `defeedback-linux open-license-gui`.
+
+To activate the plugin, close REAPER and run `defeedback-linux open-license-gui`. Open the De-Feedback editor in VSTHost, select **Options → License Management**, and follow the regular De-Feedback / Alpha Labs activation steps for Windows. See [the activation walkthrough](setup.md#license-management-in-vsthost); paid-license activation on Linux remains untested.
 
 Subcommand arguments are forwarded to the underlying launcher or tool. For example:
 

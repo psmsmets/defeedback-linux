@@ -57,7 +57,10 @@ class Commands(unittest.TestCase):
 
     def test_dispatch(self):
         for args, suffix in [([], 'reaper-launch.py'), (['--device', 'cq'], 'reaper-launch.py'),
+                             (['open-license-gui'], 'open-license-gui.sh'),
                              (['license-gui'], 'open-license-gui.sh'),
+                             (['open-license-gui', '--virtual-desktop', '/path with spaces/vsthost.exe'], 'open-license-gui.sh'),
+                             (['license-gui', '--virtual-desktop', '/path with spaces/vsthost.exe'], 'open-license-gui.sh'),
                              (['check', 'avantis', '--launch'], 'check-audio.sh'),
                              (['diagnose', '--usb-card', 'SQ'], 'diagnose.sh'),
                              (['aes67', 'install'], 'install-aes67.sh'),
@@ -75,6 +78,8 @@ class Commands(unittest.TestCase):
                     self.assertEqual(command[2:], ['--apply', '--autoremove'])
                 if args and args[0] == 'check':
                     self.assertEqual(command[2:], ['avantis', '--launch'])
+                if args and args[0] in ('open-license-gui', 'license-gui'):
+                    self.assertEqual(command[2:], args[1:])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             cli.main(['unknown'])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
@@ -123,6 +128,11 @@ class Commands(unittest.TestCase):
             for source, target in updater.RESOURCES.items():
                 self.assertEqual((app / target).read_bytes(), (BUNDLE / source).read_bytes())
             self.assertTrue((home / '.local/bin/defeedback-linux').is_symlink())
+            for name in ('open-license-gui', 'license-gui'):
+                result = subprocess.run([str(home / '.local/bin/defeedback-linux'), name, '--help'],
+                                        text=True, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('Usage: defeedback-linux open-license-gui', result.stdout)
             result = subprocess.run([str(home / '.local/bin/defeedback-linux'), 'ini', '--device',
                                      'hw:EVO8', '--inputs', '4', '--outputs', '4'],
                                     text=True, capture_output=True)

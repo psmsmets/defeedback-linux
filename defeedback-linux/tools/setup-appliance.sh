@@ -10,6 +10,8 @@ fail() {
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
     printf '%s\n' 'Usage: defeedback-linux appliance setup' \
         'Enables desktop autologin, REAPER autostart, and appliance power settings.' \
+        'Requires an installed workstation. First run bash setup-defeedback.sh from the Linux bundle.' \
+        'To install and configure autostart together, run bash setup-defeedback.sh --appliance.' \
         'USB settings load at launch. AES67 startup remains manual.' \
         'Run as the account that should log in automatically, from its Ubuntu Studio Plasma desktop.'
     exit 0
@@ -17,7 +19,7 @@ fi
 [[ $# -eq 0 ]] || fail 'Usage: defeedback-linux appliance setup'
 [[ $(uname -s) == Linux && $EUID -ne 0 ]] || fail 'Run as your desktop user on Ubuntu Studio.'
 [[ ${XDG_CURRENT_DESKTOP:-} == *KDE* ]] || fail 'Run from the target user’s Plasma desktop session.'
-[[ -x $HOME/.local/share/defeedback/bin/reaper ]] || fail 'Install REAPER with setup-defeedback.sh first.'
+[[ -x $HOME/.local/share/defeedback/bin/reaper ]] || fail 'First run bash setup-defeedback.sh from the Linux bundle, then run defeedback-linux appliance setup.'
 for command in systemctl sudo kwriteconfig6; do
     command -v "$command" >/dev/null || fail "Missing command: $command"
 done

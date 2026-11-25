@@ -36,7 +36,7 @@ def dispatch(name, arguments):
         if not launcher.is_file():
             launcher = ROOT / 'lib/reaper-launch.py'
         return [sys.executable, str(launcher)] + (['--print-ini'] if name == 'ini' else []) + arguments
-    if name == 'license-gui':
+    if name == 'open-license-gui':
         script = ROOT / 'lib/open-license-gui.sh'
     else:
         script = ROOT / 'tools' / {
@@ -151,11 +151,42 @@ def main(argv=None):
     arguments = [value for value in arguments if value != '--debug']
     if debug:
         os.environ['DEFEEDBACK_DEBUG'] = '1'
-    parser = argparse.ArgumentParser(prog='defeedback-linux', description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. REAPER and De-Feedback require separate licenses; this project includes neither license.',
-        epilog='Products and licensing: REAPER https://www.reaper.fm/purchase.php — De-Feedback https://www.alphalabsaudio.com/defeedback/ — Run a subcommand with --help for its options. Without a command, start REAPER.')
+    commands = {
+        'run': 'Start REAPER with the connected audio device (default)',
+        'update': 'Install project updates; add --reaper to update REAPER too',
+        'open-license-gui': 'Open De-Feedback in VSTHost for license activation',
+        'aes67': 'Install, configure, or manually start AES67 audio',
+        'appliance': 'Configure boot startup after installation (appliance setup)',
+        'trim': 'Preview or remove optional applications',
+        'check': 'Check audio devices (Focusrite Scarlett by default)',
+        'diagnose': 'Collect a system and audio diagnostic report',
+        'ini': 'Print REAPER audio configuration to stdout',
+        'logs': 'Read workstation logs',
+    }
+    command_width = max(map(len, commands)) + 2
+    parser = argparse.ArgumentParser(prog='defeedback-linux',
+        usage='%(prog)s [-h] [--debug] [COMMAND] [ARGS ...]',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin.\n'
+                    'Not affiliated with or endorsed by Alpha Labs.\n'
+                    'REAPER and De-Feedback require separate licenses; neither is included.',
+        epilog='Commands:\n' + '\n'.join(f'  {name:<{command_width}}{description}' for name, description in commands.items()) + '\n\n'
+               'Alias: license-gui = open-license-gui.\n'
+               'Without a command, start REAPER.\n'
+               'Use defeedback-linux COMMAND --help for command options.\n\n'
+               'Examples:\n'
+               '  defeedback-linux\n'
+               '  defeedback-linux update --reaper\n\n'
+               'First-time installation (from the Linux bundle directory):\n'
+               '  bash setup-defeedback.sh\n'
+               'Optional autologin and REAPER autostart, after installation:\n'
+               '  defeedback-linux appliance setup\n'
+               'Or install and configure autostart in one step:\n'
+               '  bash setup-defeedback.sh --appliance\n\n'
+               'Products and licensing:\n'
+               '  REAPER: https://www.reaper.fm/purchase.php\n'
+               '  De-Feedback: https://www.alphalabsaudio.com/defeedback/')
     parser.add_argument('--debug', action='store_true', help='extra text diagnostics; never records audio')
-    parser.add_argument('command', nargs='?', choices=('run', 'update', 'license-gui', 'aes67', 'appliance', 'trim', 'check', 'diagnose', 'ini', 'logs'),
-                        help='run REAPER, update code, open licensing, configure AES67 or appliance startup, trim applications, check audio, diagnose, read logs, or print INI')
     try:
         if not arguments or (arguments[0].startswith('-') and arguments[0] not in ('-h', '--help')):
             return execute(dispatch('run', arguments))
@@ -163,7 +194,9 @@ def main(argv=None):
             parser.print_help()
             return 0
         command = arguments.pop(0)
-        if command not in ('run', 'update', 'license-gui', 'aes67', 'appliance', 'trim', 'check', 'diagnose', 'ini', 'logs'):
+        if command == 'license-gui':
+            command = 'open-license-gui'
+        if command not in commands:
             parser.error('unknown command: ' + command)
         if command == 'logs':
             return show_logs(arguments)
@@ -175,9 +208,20 @@ def main(argv=None):
         if command in ('aes67', 'appliance'):
             actions = ('install', 'setup', 'ptp', 'ptp-status', 'audio', 'enable', 'disable', 'status') if command == 'aes67' else ('setup',)
             description = ('Install or configure optional AES67 audio.' if command == 'aes67' else
-                           'Configure unattended desktop login, REAPER autostart, and power settings. Automatic AES67 startup is not implemented.')
-            aes = argparse.ArgumentParser(prog='defeedback-linux ' + command, description=description)
-            aes.add_argument('action', choices=actions)
+                           'Configure desktop autologin, REAPER autostart, and power settings.\n'
+                           'Requires an installed workstation. AES67 startup remains manual.')
+            epilog = None if command == 'aes67' else (
+                'First install from the Linux bundle: bash setup-defeedback.sh\n'
+                'Then enable boot startup: defeedback-linux appliance setup\n'
+                'For both in one step: bash setup-defeedback.sh --appliance')
+            aes = argparse.ArgumentParser(prog='defeedback-linux ' + command,
+                                          description=description, epilog=epilog,
+                                          formatter_class=argparse.RawDescriptionHelpFormatter)
+            if command == 'appliance':
+                aes.add_argument('action', choices=actions, metavar='setup',
+                                 help='Enable boot startup on the installed workstation')
+            else:
+                aes.add_argument('action', choices=actions)
             if not arguments or arguments[0] in ('-h', '--help'):
                 aes.print_help()
                 return 0 if arguments else 2
