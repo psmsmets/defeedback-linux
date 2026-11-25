@@ -50,8 +50,28 @@ Copy the [Linux bundle](../defeedback-linux/) to Ubuntu Studio and follow [setup
 
 ## Measure stability and latency
 
-- The reference system with a **Focusrite Scarlett Solo 3rd Gen** measured **8.1 ms round-trip latency with De-Feedback active**, using ALSA at **48 kHz and 64 samples**. The external measurement system was a **MacBook with M1 Pro**, **Audient EVO8**, and **Open Sound Meter v1.55**, using an impulse response derived from pink noise.
-- Use **64 samples** for this Scarlett setup. Smaller blocks caused dropouts or audible clicks. If you test another buffer size, change only that setting between runs.
+### Reported results
+
+The operator reported these results on **25 November 2026**, using the Intel N100 reference system with native Linux REAPER. Sample rate and buffer size below are **ALSA settings**, not De-Feedback settings. Measured round-trip values include active De-Feedback processing.
+
+| USB device | ALSA sample rate / buffer | Result | Validation status |
+| --- | --- | --- | --- |
+| Focusrite Scarlett Solo 3rd Gen | 48 kHz / 64 samples | 8.1 ms round trip | Measured |
+| Allen & Heath CQ12T | 48 kHz / 64 samples | 8.1 ms round trip | Measured; five mono instances reported running smoothly |
+| Audient EVO8 | 48 kHz / 64 samples | 8.1 ms round trip | Measured; four-mono operation documented above |
+| Behringer U-PHORIA UMC202HD | 48 kHz / 32 samples | Approximately 5.6 ms expected | Stable operation reported at 32 samples; round-trip latency still needs measurement |
+
+The UMC202HD is the only tested interface reported stable at **32 samples** so far. Its **5.6 ms** figure is an estimate, not a measured result. Keep **64 samples** as the common USB launcher default; these observations do not change the installed profiles. A manual buffer change in REAPER lasts for that session; the automatic launcher reapplies its defaults on the next launch.
+
+The original Scarlett measurement used a **MacBook with M1 Pro**, an **Audient EVO8**, and **Open Sound Meter v1.55**, deriving an impulse response from pink noise. The operator subsequently confirmed the same measured latency with CQ12T and EVO8 as the Linux USB device. Those later reports do not establish a common maximum channel count or a sustained stability duration for every interface.
+
+SQ and QU results must not be inferred from the CQ12T measurement. SQ insert/performance validation is ongoing; a hardware issue affecting audio output on the particular test desk currently prevents completion. Per-device channel limits and end-to-end latency still need confirmation.
+
+Lower AES67 latency remains a theoretical optimization possibility while implementation and hardware validation continue. It is not a measured improvement over USB, and the current network targets do not establish that it will be faster. See [the AES67 latency budget and tuning plan](aes67.md#latency-budget-and-tuning).
+
+### Further measurements
+
+- Use **64 samples** for the initial Scarlett test. Smaller blocks caused dropouts or audible clicks on that setup. If you test another buffer size, change only that setting between runs.
 - For a PipeWire test, check `RATE` and `QUANT` on the active driver row in `pw-top`. Press `c` at the start of each run and monitor `ERR`. For direct ALSA, check the active format in REAPER and listen to or record the physical output. [PipeWire `pw-top`](https://docs.pipewire.org/devel/page_man_pw-top_1.html)
 - Test the chosen setting for at least **30 minutes**, monitor glitches, and repeat after a cold boot. Record the audio backend, software versions, channel count, rate, buffer, and latency. Measure bypass and active processing separately; do not treat a block duration as round-trip latency.
 

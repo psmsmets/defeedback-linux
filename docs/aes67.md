@@ -113,6 +113,8 @@ PTP and audio helpers remain foreground commands, not automatic services. Start 
 
 ## Latency budget and tuning
 
+The [USB measurement summary](overview.md#reported-results) separates confirmed round-trip results from the unmeasured 32-sample Behringer estimate. Lower AES67 latency is a theoretical tuning goal, not an established result. Validate the complete loop and compare measured bypass and active-plugin paths before claiming an improvement over USB.
+
 The current backend is PipeWire AES67 with a JACK client interface for REAPER, not `aes67-linux-daemon` with a RAVENNA ALSA driver. The latter project's PulseAudio restrictions do not describe this backend. Keep `pipewire-pulse` available for desktop compatibility; it is not in the REAPER/JACK signal path.
 
 At 48 kHz, graph blocks of 32/48/64/96 samples last 0.667/1/1.333/2 ms. Eight channels run in parallel; do not multiply block duration by eight. More instances can increase CPU load and cause missed deadlines.
