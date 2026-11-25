@@ -31,6 +31,10 @@ CQ processed returns use separate mixer channels with **USB/SD** as their source
 | CQ12T — tested | 6, 7, 8, 9, 10 | 1, 2, 3, 4, 5 |
 | CQ18T / CQ20B — unvalidated | 9, 10, 11, 12, 13, 14, 15, 16 | 1, 2, 3, 4, 5, 6, 7, 8 |
 
+The CQ12T screenshot shows REAPER 7.86 reopening the saved five-path project, with inputs **6–10 → outputs 1–5** and a one-input/one-output De-Feedback instance on each track. The selected ALSA device is CQ12T at 48 kHz, 24-bit, and 64 samples. Console patching still follows the signal-flow guidance above.
+
+![CQ12T five-path project in REAPER with five mono De-Feedback instances](images/defeedback-reaper-cq12t-5ch.png)
+
 ## Saved projects and preferences
 
 Automatic projects are saved per device and channel count in `~/.local/state/defeedback/`. Subsequent launches reopen them and check mono plugin I/O. Move a saved project aside to regenerate it. Manual generation saves `templates/defeedback-PROFILE.RPP` beside the script and refuses to overwrite an existing file.

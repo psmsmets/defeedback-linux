@@ -21,7 +21,11 @@ After installation, run `defeedback-linux` to start REAPER with the detected aud
 
 REAPER after automatic appliance startup on the reference Beelink, with an Audient EVO8 detected over USB and four mono paths using the activated De-Feedback plugin. See [startup and routing](docs/setup.md#dedicated-workstation-startup).
 
-![REAPER 7.86 with the Audient EVO8 and four mono De-Feedback instances after appliance autostart](docs/images/defeedback-reaper-evo8.png)
+![REAPER 7.86 with the Audient EVO8 and four mono De-Feedback instances after appliance autostart](docs/images/defeedback-reaper-evo8-4ch.png)
+
+REAPER with an Allen & Heath CQ12T over USB and five mono De-Feedback paths, mapping inputs **6–10 → outputs 1–5**. See [CQ routing](docs/reaper-projects.md#cq-signal-flow-and-channel-mapping).
+
+![REAPER 7.86 with the CQ12T and five mono De-Feedback instances, inputs 6–10 to outputs 1–5](docs/images/defeedback-reaper-cq12t-5ch.png)
 
 Successful De-Feedback activation in VSTHost, with the installed REAPER and license-management desktop shortcuts visible. Run `defeedback-linux open-license-gui`, then follow the [activation steps](docs/setup.md#license-management-in-vsthost).
 

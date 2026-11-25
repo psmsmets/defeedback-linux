@@ -75,7 +75,7 @@ Reboot when ready and verify that the desktop and REAPER appear. Check the REAPE
 
 The reference Beelink successfully started REAPER 7.86 automatically with the Audient EVO8 connected and reopened its four-mono-path project with the activated De-Feedback plugin. The screenshot shows ALSA EVO8 at 48 kHz, 24-bit, and 64 samples, with each plugin exposing one input and one output.
 
-![REAPER after appliance autostart with the Audient EVO8 and four mono De-Feedback instances](images/defeedback-reaper-evo8.png)
+![REAPER after appliance autostart with the Audient EVO8 and four mono De-Feedback instances](images/defeedback-reaper-evo8-4ch.png)
 
 To stop REAPER from starting at login, run `systemctl --user disable defeedback-reaper.service`. To turn off automatic login, run `sudo kwriteconfig6 --file /etc/sddm.conf --group Autologin --key User ""`. Setup saves an existing `/etc/sddm.conf` to `/etc/sddm.conf.before-defeedback` on the first run. To restore the system sleep and power-button defaults, remove the `90-defeedback-appliance.conf` files from `/etc/systemd/sleep.conf.d/` and `/etc/systemd/logind.conf.d/`, then reboot. Adjust the corresponding desktop preferences in Plasma System Settings.
 
@@ -129,7 +129,7 @@ To activate De-Feedback, use the complete 64-bit VSTHost folder in `packages/vst
 3. Follow the regular **De-Feedback / Alpha Labs activation steps for Windows** in that window. Enter the credentials requested by Alpha Labs there and complete the activation prompts. The Linux command opens the interface; activation is handled by De-Feedback itself. See [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/) for vendor instructions and support.
 4. Wait for the activation prompts to finish, close VSTHost, and start REAPER with `defeedback-linux`.
 
-The VSTHost desktop shortcut opens the same permanent prefix. Activation succeeded on the reference Beelink, and the activated plugin subsequently loaded in REAPER with four mono EVO8 paths; see [validation status](overview.md#validation-status). REAPER requires its own separate license.
+The VSTHost desktop shortcut opens the same permanent prefix. Activation succeeded on the reference Beelink, and the activated plugin subsequently loaded in REAPER with four mono EVO8 paths and five mono CQ12T paths; see [validation status](overview.md#validation-status). REAPER requires its own separate license.
 
 ![De-Feedback license management in VSTHost showing Status: Activated and the installed desktop shortcuts](images/defeedback-license-vsthost.png)
 
