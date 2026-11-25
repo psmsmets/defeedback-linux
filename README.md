@@ -33,22 +33,16 @@ To activate De-Feedback, open its FX window in REAPER and click **UI** to show t
 
 ## Install and enable headless startup
 
-Use the Ubuntu Studio Plasma desktop for installation and activation. Connect a Focusrite Scarlett over USB for the first audio test. Copy the [Linux bundle](defeedback-linux/), open a terminal in that directory, and place the [official Windows installer](https://www.alphalabsaudio.com/defeedback/) at `packages/DefeedbackSetup.exe`. Create `packages/` first if needed, then run:
+Keep a monitor, keyboard, and Internet connection available for the first setup.
 
-```bash
-bash setup-defeedback.sh
-defeedback-linux
-```
+1. **Start Ubuntu Studio.** Use its Plasma desktop and connect the Focusrite Scarlett over USB. For a new computer, follow [OS preparation](docs/overview.md#prepare-ubuntu-studio).
+2. **Download this project.** On GitHub, choose **Code → Download ZIP** and extract it. Open the inner `defeedback-linux` folder, which contains `setup-defeedback.sh`.
+3. **Install.** Create `packages` inside that folder and put the [official installer](https://www.alphalabsaudio.com/defeedback/) there as `DefeedbackSetup.exe`. Open a terminal beside `setup-defeedback.sh` and run `bash setup-defeedback.sh`. Follow the installer windows and wait for completion. Answer **no** to headless setup for now.
+4. **Open and activate.** Open a new terminal and run `defeedback-linux`. In REAPER, use De-Feedback's **FX → UI → Options → License Management** to activate the plugin.
+5. **Test the sound.** Verify the Scarlett input and output, save the REAPER project, and close REAPER. See [the audio test](docs/setup.md#first-audio-test-with-focusrite).
+6. **Enable automatic startup.** Run `defeedback-linux appliance setup`, then reboot. First confirm that REAPER and the audio work automatically; then test booting without the monitor and keyboard.
 
-Activate De-Feedback through **UI → Options → License Management**, check the physical audio path, and close REAPER. To enable automatic login and REAPER startup for operation without a monitor or keyboard:
-
-```bash
-defeedback-linux appliance setup
-```
-
-Reboot when ready and verify the saved routing and audio path. REAPER runs in an automatically logged-in graphical Plasma session. Monitor-free boot and EVO8 autostart have been validated on the reference Beelink; automatic AES67 services and failure recovery remain planned. See [headless setup and appliance settings](docs/appliance.md).
-
-The installer shows these next steps and, in an interactive terminal, offers to enable headless startup with **no** as the default. You can decline until activation and audio testing are complete. Use `bash setup-defeedback.sh --appliance` to install and configure startup together, or `--no-appliance` to skip the question. Neither option reboots the computer.
+See [detailed setup](docs/setup.md) and [headless operation](docs/appliance.md) if needed. Headless USB startup uses automatic Plasma login; automatic AES67 services remain planned.
 
 ## Commands and help
 
