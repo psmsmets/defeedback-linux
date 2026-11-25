@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.1.0-alpha.1 — Unreleased
+## 0.1.0 — 2026-11-25
 
-First experimental prerelease of the unofficial Linux integration for Alpha Labs De-Feedback. Intended for setup experiments and hardware testing on Ubuntu Studio.
+First experimental release of the unofficial Linux integration for Alpha Labs De-Feedback. Intended for setup experiments and hardware testing on Ubuntu Studio.
 
 ### Included
 
