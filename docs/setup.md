@@ -10,16 +10,15 @@ bash setup-defeedback.sh
 
 The script uses `sudo` for Ubuntu packages and installs REAPER, yabridge, and patched Wine in your home directory. It reuses an existing patched Wine build when available. On a fresh machine it compiles the Direct2D/DirectComposition Wine fork from source, which can take a while on the target computer. The runtime lives at `~/.local/opt/defeedback-wine-dcomp/runtime`. [Wine fork and build notes](https://github.com/giang17/wine/blob/d2d1-dcomp-11.0/PATCHES.md)
 
-Close REAPER and VSTHost before updating an existing installation. Setup updates the permanent `~/.wine-defeedback` prefix in place and reuses its installed VST3. Use the installed REAPER launcher so yabridge gets the patched Wine loader and server. REAPER gets desktop and applications-menu entries; VSTHost entries are added when its package is available. The `defeedback-linux`, `reaper`, `vsthost`, and `yabridgectl` commands are linked into `~/.local/bin`. Open a new Konsole tab, or run `export PATH="$HOME/.local/bin:$PATH"` for the current terminal. [yabridge Wine configuration](https://github.com/robbert-vdh/yabridge#configuration)
+Close REAPER and any optional VSTHost instance before updating an existing installation. Setup updates the permanent `~/.wine-defeedback` prefix in place and reuses its installed VST3. Use the installed REAPER launcher so yabridge gets the patched Wine loader and server. REAPER gets desktop and applications-menu entries. The `defeedback-linux`, `reaper`, and `yabridgectl` commands are linked into `~/.local/bin`. VSTHost is not installed by setup and has no shortcut. Open a new Konsole tab, or run `export PATH="$HOME/.local/bin:$PATH"` for the current terminal. [yabridge Wine configuration](https://github.com/robbert-vdh/yabridge#configuration)
 
-Download the Windows installer and optional VSTHost x64 archive manually from Alpha Labs. Complete the three acknowledgements on the website, then put `DefeedbackSetup.exe` in `packages/` and extract VSTHost to `packages/vsthostx64/` if you need it. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/) On a new installation, setup opens it through Wine so each user can review and accept the Alpha Labs terms in the installer. Add your Linux packages to the same directory or supply their directory with `bash setup-defeedback.sh '/path/to/packages'`.
+Download the Windows De-Feedback installer manually from Alpha Labs. Complete the three acknowledgements on the website, create `packages/` if needed, and put `DefeedbackSetup.exe` there. [Alpha Labs download page](https://www.alphalabsaudio.com/defeedback/) On a new installation, setup opens it through Wine so each user can review and accept the Alpha Labs terms in the installer. Activate the plugin [directly in REAPER](#license-management-in-reaper); VSTHost is not required. Add your Linux packages to the same directory or supply their directory with `bash setup-defeedback.sh '/path/to/packages'`.
 
 | Package | File name or directory |
 | --- | --- |
 | REAPER for Linux x86-64 | `reaper*_linux_x86_64.tar.xz` |
 | yabridge for x86-64 | `yabridge-*.tar.gz` or its `.tar.gz.zip` wrapper from GitHub Actions |
 | yabridgectl | `yabridgectl-*.tar.gz` or `.tar.gz.zip` from the same build if provided separately |
-| VSTHost x64 with all companion files | `vsthostx64/` |
 | Extracted yabridge | `yabridge/` containing `yabridgectl` and the bridge files |
 
 For missing archives, the script downloads the REAPER version in the resource manifest and checks its published SHA-256. It fetches the current yabridge development build via the project's nightly.link page. APT may also need internet access. Use a development build of yabridge with the patched Wine runtime. [REAPER](https://www.reaper.fm/download.php?hashes=1) · [yabridge](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues)
@@ -120,20 +119,45 @@ For a direct SQ USB test, close REAPER and run `defeedback-linux diagnose --usb-
 
 If extraction under Wine fails, run the official installer on Windows, review the terms, and accept them if you agree. Copy the resulting `Defeedback.vst3` into the Linux setup's `packages/` directory. If it is a folder, copy the whole folder. Then run `bash setup-defeedback.sh --import-vst3` to import the plugin into the Wine prefix and register it with yabridge. For a custom package directory, place the VST3 there and pass that directory after `--import-vst3`.
 
-## License management in VSTHost
+## License management in REAPER
 
-To activate De-Feedback, use the complete 64-bit VSTHost folder in `packages/vsthostx64/`, including its license and Data folder. If VSTHost is not installed, add that folder to the Linux bundle and rerun `bash setup-defeedback.sh`.
+Patched Wine allows the De-Feedback graphical editor to open directly in native Linux REAPER through yabridge. This is the standard activation path; VSTHost is not required.
 
-1. Close REAPER and VSTHost, then run `defeedback-linux open-license-gui` from the Ubuntu Studio desktop terminal. This opens De-Feedback in VSTHost without audio, using the permanent Wine prefix shared with REAPER.
-2. Click the plug-in edit dial to open the De-Feedback editor, then select **Options → License Management**.
-3. Follow the regular **De-Feedback / Alpha Labs activation steps for Windows** in that window. Enter the credentials requested by Alpha Labs there and complete the activation prompts. The Linux command opens the interface; activation is handled by De-Feedback itself. See [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/) for vendor instructions and support.
-4. Wait for the activation prompts to finish, close VSTHost, and start REAPER with `defeedback-linux`.
+1. Start REAPER with `defeedback-linux` or the **De-Feedback Linux** desktop shortcut so it uses the patched Wine runtime and permanent `~/.wine-defeedback` prefix.
+2. Open a track's **FX** window and select the **De-Feedback** plugin. Click **UI** in REAPER's FX window to display the plugin's graphical editor.
+3. In the plugin editor, select **Options → License Management** and follow the regular **De-Feedback / Alpha Labs activation steps for Windows**. Enter the credentials requested by Alpha Labs in that window and complete its activation prompts.
+4. Confirm the plugin reports its activated status before testing the audio path. REAPER requires its own separate license.
 
-The VSTHost desktop shortcut opens the same permanent prefix. Activation succeeded on the reference Beelink, and the activated plugin subsequently loaded in REAPER with four mono EVO8 paths and five mono CQ12T paths; see [validation status](overview.md#validation-status). REAPER requires its own separate license.
+The screenshots show the graphical editor, its Options menu, and the activated license directly in REAPER with patched Wine. See [validation status](overview.md#validation-status) for the completed hardware tests.
 
-![De-Feedback license management in VSTHost showing Status: Activated and the installed desktop shortcuts](images/defeedback-license-vsthost.png)
+De-Feedback's graphical editor after clicking **UI** in the REAPER FX window:
 
-The desktop shortcuts provide two entry points: **De-Feedback Linux** starts REAPER through the hardware-aware launcher with the device's mono project, while **VSTHost (De-Feedback License)** opens De-Feedback for activation. Close VSTHost before starting REAPER.
+![De-Feedback graphical editor open directly in REAPER with the UI button visible](images/defeedback-reaper-ui.png)
+
+The plugin's **Options** menu contains **License Management**:
+
+![De-Feedback Options menu in REAPER showing License Management](images/defeedback-reaper-ui-options.png)
+
+License Management showing **Status: Activated**:
+
+![De-Feedback License Management showing Status Activated directly in REAPER](images/defeedback-reaper-ui-license.png)
+
+## Optional VSTHost
+
+VSTHost is an extra host for experiments, not part of the standard installation or activation workflow. To install and start it explicitly:
+
+```bash
+defeedback-linux install vsthost
+defeedback-linux start vsthost
+```
+
+Installation downloads the complete x64 package from Hermann Seib's official site and retains its license and companion files. For a local package or offline installation, use `defeedback-linux install vsthost --source /path/to/vsthostx64.zip` or pass the extracted package directory instead. It does not create a command alias or desktop shortcut.
+
+The upstream free package permits private use only and excludes commercial or professional use. See [third-party software and redistribution](installation.md#third-party-software-and-redistribution).
+
+Close REAPER before starting VSTHost. The command loads De-Feedback without audio or MIDI in the same permanent Wine prefix, using patched Wine. Click the plug-in edit dial to open its editor. Add `--virtual-desktop` if a Wine virtual desktop is needed. Close VSTHost before reopening REAPER.
+
+Integration updates remove this project's old VSTHost command and shortcuts, keeping backup copies in the update directory. An existing `vsthostx64` package remains installed and can be opened with `defeedback-linux start vsthost`.
 
 ## Automatic USB startup
 

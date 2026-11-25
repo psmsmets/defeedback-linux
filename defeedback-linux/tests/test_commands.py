@@ -72,10 +72,10 @@ class Commands(unittest.TestCase):
 
     def test_dispatch(self):
         for args, suffix in [([], 'reaper-launch.py'), (['--device', 'cq'], 'reaper-launch.py'),
-                             (['open-license-gui'], 'open-license-gui.sh'),
-                             (['license-gui'], 'open-license-gui.sh'),
-                             (['open-license-gui', '--virtual-desktop', '/path with spaces/vsthost.exe'], 'open-license-gui.sh'),
-                             (['license-gui', '--virtual-desktop', '/path with spaces/vsthost.exe'], 'open-license-gui.sh'),
+                             (['install', 'vsthost'], 'install-vsthost.py'),
+                             (['install', 'vsthost', '--source', '/path with spaces/package.zip'], 'install-vsthost.py'),
+                             (['start', 'vsthost'], 'start-vsthost.sh'),
+                             (['start', 'vsthost', '--virtual-desktop'], 'start-vsthost.sh'),
                              (['check', 'avantis', '--launch'], 'check-audio.sh'),
                              (['diagnose', '--usb-card', 'SQ'], 'diagnose.sh'),
                              (['aes67', 'install'], 'install-aes67.sh'),
@@ -93,12 +93,15 @@ class Commands(unittest.TestCase):
                     self.assertEqual(command[2:], ['--apply', '--autoremove'])
                 if args and args[0] == 'check':
                     self.assertEqual(command[2:], ['avantis', '--launch'])
-                if args and args[0] in ('open-license-gui', 'license-gui'):
-                    self.assertEqual(command[2:], args[1:])
+                if args and args[0] in ('install', 'start'):
+                    self.assertEqual(command[2:], args[2:])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             cli.main(['unknown'])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             cli.main(['appliance', 'install'])
+        for args in (['open-license-gui'], ['license-gui'], ['install', 'unknown'], ['start', 'unknown']):
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                cli.main(args)
         with patch.object(cli, 'execute', return_value=0) as execute, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(cli.main(['appliance', '--help']), 0)
             execute.assert_not_called()
@@ -132,8 +135,32 @@ class Commands(unittest.TestCase):
             desktop = home / 'Desktop/defeedback-reaper.desktop'
             desktop.parent.mkdir()
             desktop.write_text('[Desktop Entry]\nName=REAPER\nExec=reaper\n')
+            legacy = app / 'bin/vsthost'
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text('#!/bin/bash\n# Usage: defeedback-linux open-license-gui\n')
+            legacy_link = home / '.local/bin/vsthost'
+            legacy_link.symlink_to(legacy)
+            legacy_helper = app / 'lib/open-license-gui.sh'
+            legacy_helper.parent.mkdir()
+            legacy_helper.write_text(legacy.read_text())
+            shortcut = desktop.parent / 'defeedback-vsthost.desktop'
+            shortcut.write_text('[Desktop Entry]\nName=VSTHost (De-Feedback License)\nExec="' + str(legacy) + '"\n')
+            unrelated = home / '.local/share/applications/defeedback-vsthost.desktop'
+            unrelated.parent.mkdir(parents=True)
+            unrelated.write_text('[Desktop Entry]\nName=My VSTHost\nExec=custom-vsthost\n')
+            package = app / 'vsthostx64/vsthost.exe'
+            package.parent.mkdir()
+            package.write_bytes(b'preserve optional package')
             with patch.object(updater.shutil, 'which', return_value=None):
                 updater.install(None, home / 'REAPER', app, backup)
+            self.assertFalse(shortcut.exists())
+            self.assertFalse(legacy.exists())
+            self.assertFalse(legacy_link.is_symlink())
+            self.assertFalse(legacy_helper.exists())
+            self.assertEqual(package.read_bytes(), b'preserve optional package')
+            self.assertIn('Exec=custom-vsthost', unrelated.read_text())
+            self.assertTrue((backup / 'legacy-vsthost/desktop/defeedback-vsthost.desktop').exists())
+            self.assertTrue((backup / 'legacy-vsthost/bin/vsthost').exists())
             metadata = json.loads((app / 'installation.json').read_text())
             self.assertEqual(metadata['version'], (BUNDLE / 'VERSION').read_text().strip())
             self.assertIsNone(metadata['revision'])
@@ -155,11 +182,11 @@ class Commands(unittest.TestCase):
             for source, target in updater.RESOURCES.items():
                 self.assertEqual((app / target).read_bytes(), (BUNDLE / source).read_bytes())
             self.assertTrue((home / '.local/bin/defeedback-linux').is_symlink())
-            for name in ('open-license-gui', 'license-gui'):
-                result = subprocess.run([str(home / '.local/bin/defeedback-linux'), name, '--help'],
+            for action in ('install', 'start'):
+                result = subprocess.run([str(home / '.local/bin/defeedback-linux'), action, 'vsthost', '--help'],
                                         text=True, capture_output=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn('Usage: defeedback-linux open-license-gui', result.stdout)
+                self.assertIn('defeedback-linux ' + action + ' vsthost', result.stdout)
             result = subprocess.run([str(home / '.local/bin/defeedback-linux'), 'ini', '--device',
                                      'hw:EVO8', '--inputs', '4', '--outputs', '4'],
                                     text=True, capture_output=True)

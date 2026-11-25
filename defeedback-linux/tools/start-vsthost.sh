@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Open the De-Feedback license UI in VSTHost using the patched Wine and shared De-Feedback prefix.
+# Start optional VSTHost with De-Feedback using patched Wine and the shared prefix.
 set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: defeedback-linux open-license-gui [--virtual-desktop] [/path/to/vsthost.exe]
+Usage: defeedback-linux start vsthost [--virtual-desktop]
 
-Alias: defeedback-linux license-gui
+Optional VSTHost alternative. Standard activation is in REAPER: open the
+De-Feedback FX window, click UI, then Options > License Management.
+VSTHost is not required for that workflow. Its own license terms apply.
 
+Install this optional host first with defeedback-linux install vsthost.
 Opens the installed De-Feedback VST3 in 64-bit VSTHost without an audio
-driver. If no path is given, use the installed VSTHost, then check the
-bundled packages and installers directories. Close REAPER and VSTHost first.
+driver. Close REAPER and VSTHost first. No desktop shortcut is created.
 
 Open the De-Feedback editor, then Options > License Management. Follow
 the regular De-Feedback / Alpha Labs activation steps for Windows there.
@@ -28,7 +30,7 @@ case ${1:-} in
     --help|-h) usage; exit 0 ;;
     --virtual-desktop) virtual_desktop=true; shift ;;
 esac
-[[ $# -le 1 && ${1:-} != -* ]] || { usage >&2; exit 2; }
+[[ $# -eq 0 ]] || { usage >&2; exit 2; }
 
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'Run on Ubuntu Studio (Linux x86-64).'
 (( EUID != 0 )) || fail 'Run as your desktop user without sudo.'
@@ -40,18 +42,11 @@ unset WINEARCH WINEDLLOVERRIDES
 export WINELOADER="$wine" WINESERVER="$wine_bin/wineserver"
 export PATH="$wine_bin:$PATH"
 if pgrep -u "$EUID" -x reaper >/dev/null || pgrep -u "$EUID" -ix 'vsthost[.]exe' >/dev/null; then
-    fail 'Close REAPER and VSTHost before opening the license GUI.'
+    fail 'Close REAPER and VSTHost before starting VSTHost.'
 fi
 
-bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-vsthost=${1:-"$HOME/.local/share/defeedback/vsthostx64/vsthost.exe"}
-if [[ $# -eq 0 && ! -f $vsthost ]]; then
-    vsthost="$bundle_dir/../packages/vsthostx64/vsthost.exe"
-fi
-if [[ $# -eq 0 && ! -f $vsthost ]]; then
-    vsthost="$bundle_dir/../../installers/vsthostx64/vsthost.exe"
-fi
-[[ -f $vsthost ]] || fail 'Pass the path to the 64-bit vsthost.exe from the extracted vsthostx64 folder.'
+vsthost="$HOME/.local/share/defeedback/vsthostx64/vsthost.exe"
+[[ -f $vsthost && -f ${vsthost%/*}/license.txt ]] || fail 'VSTHost is not installed. Run defeedback-linux install vsthost first.'
 vsthost=$(realpath -- "$vsthost")
 
 export WINEPREFIX="$HOME/.wine-defeedback"

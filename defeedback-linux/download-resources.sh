@@ -10,6 +10,7 @@ usage() {
     printf '%s\n' 'Usage: bash download-resources.sh [--config FILE] [--output DIR] [--only RESOURCE] [--apt] [--open-manual]' \
         'Defaults: config/resources.conf and packages/ beside this script.' \
         'Run --apt on a connected Ubuntu amd64 machine matching the target release.' \
+        'VSTHost is optional; request its instructions explicitly with --only vsthost.' \
         'Use --open-manual to open the vendor pages for missing manual downloads.'
 }
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
@@ -128,7 +129,8 @@ while IFS='|' read -r resource kind name url checksum extra || [[ -n $resource ]
             download_file "$name" "$url" "$checksum"
             ;;
         nightly) download_nightly "${url%/}" ;;
-        manual)
+        manual|optional-manual)
+            [[ $kind != optional-manual || -n $only ]] || continue
             if [[ ! -f $output/$name ]]; then
                 printf 'Supply %s locally. Download the package in your browser and complete any vendor confirmations at %s\n' "$name" "$url"
                 printf '%s\n' "$url" >> "$stage/manual-urls"

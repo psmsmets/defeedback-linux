@@ -37,14 +37,14 @@ def dispatch(name, arguments):
         if not launcher.is_file():
             launcher = ROOT / 'lib/reaper-launch.py'
         return [sys.executable, str(launcher)] + (['--print-ini'] if name == 'ini' else []) + arguments
-    if name == 'open-license-gui':
-        script = ROOT / 'lib/open-license-gui.sh'
-    else:
-        script = ROOT / 'tools' / {
-            'check': 'check-audio.sh', 'diagnose': 'diagnose.sh',
-            'aes67-install': 'install-aes67.sh', 'aes67-setup': 'setup-aes67.sh',
-            'appliance-setup': 'setup-appliance.sh', 'trim': 'trim-workstation.sh',
-        }[name]
+    if name == 'install-vsthost':
+        return [sys.executable, str(ROOT / 'tools/install-vsthost.py')] + arguments
+    script = ROOT / 'tools' / {
+        'start-vsthost': 'start-vsthost.sh',
+        'check': 'check-audio.sh', 'diagnose': 'diagnose.sh',
+        'aes67-install': 'install-aes67.sh', 'aes67-setup': 'setup-aes67.sh',
+        'appliance-setup': 'setup-appliance.sh', 'trim': 'trim-workstation.sh',
+    }[name]
     return ['/bin/bash', str(script)] + arguments
 
 
@@ -155,7 +155,8 @@ def main(argv=None):
     commands = {
         'run': 'Start REAPER with the connected audio device (default)',
         'update': 'Install project updates; add --reaper to update REAPER too',
-        'open-license-gui': 'Open De-Feedback in VSTHost for license activation',
+        'install': 'Install an optional application (install vsthost)',
+        'start': 'Start an optional application (start vsthost)',
         'aes67': 'Install, configure, or manually start AES67 audio',
         'appliance': 'Configure boot startup after installation (appliance setup)',
         'trim': 'Preview or remove optional applications',
@@ -172,9 +173,11 @@ def main(argv=None):
                     'Not affiliated with or endorsed by Alpha Labs.\n'
                     'REAPER and De-Feedback require separate licenses; neither is included.',
         epilog='Commands:\n' + '\n'.join(f'  {name:<{command_width}}{description}' for name, description in commands.items()) + '\n\n'
-               'Alias: license-gui = open-license-gui.\n'
                'Without a command, start REAPER.\n'
                'Use defeedback-linux COMMAND --help for command options.\n\n'
+               'Plugin activation in REAPER:\n'
+               '  Open De-Feedback FX, click UI, then Options > License Management.\n'
+               '  VSTHost is optional: install vsthost, then start vsthost.\n\n'
                'Examples:\n'
                '  defeedback-linux\n'
                '  defeedback-linux update --reaper\n\n'
@@ -200,10 +203,19 @@ def main(argv=None):
             parser.print_help()
             return 0
         command = arguments.pop(0)
-        if command == 'license-gui':
-            command = 'open-license-gui'
         if command not in commands:
             parser.error('unknown command: ' + command)
+        if command in ('install', 'start'):
+            optional = argparse.ArgumentParser(prog='defeedback-linux ' + command,
+                description=('Install optional VSTHost; standard activation is in REAPER.' if command == 'install'
+                             else 'Start optional VSTHost with De-Feedback and patched Wine.'))
+            optional.add_argument('application', choices=('vsthost',))
+            if not arguments or arguments[0] in ('-h', '--help'):
+                optional.print_help()
+                return 0 if arguments else 2
+            application = arguments.pop(0)
+            optional.parse_args([application])
+            return execute(dispatch(command + '-' + application, arguments))
         if command == 'logs':
             return show_logs(arguments)
         if command == 'update':

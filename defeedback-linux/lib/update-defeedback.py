@@ -29,7 +29,6 @@ RESOURCES = {
     'lib/session_log.py': 'lib/session_log.py',
     'lib/log_commands.py': 'lib/log_commands.py',
     'lib/aes67_runtime.py': 'lib/aes67_runtime.py',
-    'lib/open-license-gui.sh': 'lib/open-license-gui.sh',
     'config/resources.conf': 'config/resources.conf',
     'lib/reaper': 'bin/reaper',
     'lib/reaper-launch.py': 'bin/reaper-launch.py',
@@ -37,7 +36,7 @@ RESOURCES = {
     'reaper/plugin-state.RPP': 'reaper/plugin-state.RPP',
 }
 for tool in ('check-audio.sh', 'diagnose.sh', 'install-aes67.sh', 'setup-aes67.sh',
-             'setup-appliance.sh', 'trim-workstation.sh'):
+             'setup-appliance.sh', 'trim-workstation.sh', 'install-vsthost.py', 'start-vsthost.sh'):
     RESOURCES['tools/' + tool] = 'tools/' + tool
 
 
@@ -193,14 +192,14 @@ def install(runtime, installed, app, backup):
     try:
         if old_command.is_symlink() and old_command.resolve() == (app / 'bin/defeedback').resolve():
             old_command.unlink()
-        refresh_desktop_names()
+        refresh_desktop_names(app, backup)
     except OSError as error:
         logging.warning('Integration installed, but command/desktop cleanup failed: %s', error)
     if moved_old:
         logging.info('Previous REAPER runtime: %s', old_runtime)
 
 
-def refresh_desktop_names():
+def refresh_desktop_names(app, backup):
     home = Path.home()
     applications = Path(os.environ.get('XDG_DATA_HOME', home / '.local/share')) / 'applications'
     desktop = home / 'Desktop'
@@ -209,7 +208,27 @@ def refresh_desktop_names():
         candidate = Path(result.stdout.strip())
         if result.returncode == 0 and candidate.is_absolute() and candidate != home:
             desktop = candidate
-    for directory in (applications, desktop):
+    def retire(path, category):
+        target = backup / 'legacy-vsthost' / category / path.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, target, follow_symlinks=False)
+        path.unlink()
+
+    command = home / '.local/bin/vsthost'
+    if command.is_symlink() and command.resolve() == (app / 'bin/vsthost').resolve():
+        retire(command, 'commands')
+    for relative in ('bin/vsthost', 'lib/open-license-gui.sh'):
+        script = app / relative
+        if (script.is_file() and not script.is_symlink()
+                and 'Usage: defeedback-linux open-license-gui' in script.read_text()):
+            retire(script, Path(relative).parent.name)
+    for category, directory in (('applications', applications), ('desktop', desktop)):
+        shortcut = directory / 'defeedback-vsthost.desktop'
+        if shortcut.is_file() and not shortcut.is_symlink():
+            text = shortcut.read_text()
+            if ('Name=VSTHost (De-Feedback License)' in text
+                    and str(app / 'bin/vsthost') in text):
+                retire(shortcut, category)
         entry = directory / 'defeedback-reaper.desktop'
         if not entry.is_file():
             continue

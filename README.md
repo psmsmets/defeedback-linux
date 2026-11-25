@@ -1,10 +1,18 @@
 # Alpha Labs De-Feedback on Linux
 
-**Experimental project.** USB operation has been validated on the documented hardware. AES67 integration is under development and still requires end-to-end hardware testing. See [validation status](docs/overview.md#validation-status) for the scope of the completed tests.
+---
+
+## Disclaimer
 
 Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. REAPER and Alpha Labs De-Feedback are separately licensed products. This project includes neither license. Obtain and activate each product according to its vendor's terms.
 
 Products and licensing: [REAPER](https://www.reaper.fm/purchase.php) · [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/).
+
+The integration scripts are licensed under [MIT](LICENSE). Third-party software retains its own licenses. See [third-party software and redistribution](docs/installation.md#third-party-software-and-redistribution).
+
+---
+
+**Experimental project.** USB operation has been validated on the documented hardware. AES67 integration is under development and still requires end-to-end hardware testing. See [validation status](docs/overview.md#validation-status) for the scope of the completed tests.
 
 Run the Windows De-Feedback VST3 on Ubuntu Studio with native Linux REAPER using yabridge and patched Wine. The hardware-aware launcher selects a supported USB device and opens its mono routing project. The goal is a headless appliance that loads the appropriate audio settings at boot for USB or AES67. USB selection is implemented. Boot without a monitor has been validated. Full automatic AES67 service startup is planned. See [startup selection](https://github.com/psmsmets/defeedback-linux/blob/main/docs/setup.md#startup-selection).
 
@@ -19,11 +27,7 @@ See [test hardware and measurements](docs/overview.md) for validated configurati
 
 After installation, run `defeedback-linux` to start REAPER with the detected audio device. Use `defeedback-linux --help` for all available commands and `defeedback-linux --version` when reporting an issue. See the [changelog](CHANGELOG.md) for release notes.
 
-## Support this project
-
-If this Linux setup helped you, consider buying me a coffee to support development, documentation, and hardware testing of this unofficial integration.
-
-[![Buy me a coffee](https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/psmsmets)
+To activate De-Feedback, open its FX window in REAPER and click **UI** to show the plugin editor, then choose **Options → License Management**. Patched Wine supports this directly in REAPER; VSTHost is optional. See [activation in REAPER](docs/setup.md#license-management-in-reaper).
 
 ## Screenshots
 
@@ -35,8 +39,18 @@ REAPER with an Allen & Heath CQ12T over USB and five mono De-Feedback paths, map
 
 ![REAPER 7.86 with the CQ12T and five mono De-Feedback instances, inputs 6–10 to outputs 1–5](docs/images/defeedback-reaper-cq12t-5ch.png)
 
-Successful De-Feedback activation in VSTHost, with the installed REAPER and license-management desktop shortcuts visible. Run `defeedback-linux open-license-gui`, then follow the [activation steps](docs/setup.md#license-management-in-vsthost).
-
-![De-Feedback license window showing Status: Activated in VSTHost, alongside the desktop shortcuts](docs/images/defeedback-license-vsthost.png)
-
 These results were confirmed on 25 November 2026. See [validation status](docs/overview.md#validation-status) for the tested configurations and remaining work.
+
+De-Feedback's graphical editor opens directly in REAPER after clicking **UI**:
+
+![De-Feedback graphical editor directly in REAPER with the UI button visible](docs/images/defeedback-reaper-ui.png)
+
+The plugin's **Options → License Management** window shows **Status: Activated**. See the [complete walkthrough, including the Options menu](docs/setup.md#license-management-in-reaper).
+
+![De-Feedback License Management showing Status Activated directly in REAPER](docs/images/defeedback-reaper-ui-license.png)
+
+## Support this project
+
+If this Linux setup helped you, consider buying me a coffee to support development, documentation, and hardware testing of this unofficial integration.
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/psmsmets)

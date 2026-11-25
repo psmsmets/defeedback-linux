@@ -4,12 +4,22 @@ Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliat
 
 Products and licensing: [REAPER](https://www.reaper.fm/purchase.php) · [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/).
 
-Use an Ubuntu Studio desktop terminal as your regular user. Place the official Windows installer in `packages/DefeedbackSetup.exe`, then run:
+Use an Ubuntu Studio desktop terminal as your regular user and run these commands from this bundle directory. Download the [official Windows De-Feedback installer](https://www.alphalabsaudio.com/defeedback/), create `packages/` if needed, and place the installer at `packages/DefeedbackSetup.exe`:
+
+```bash
+mkdir -p packages
+```
+
+Once the installer is in place, run:
 
 ```bash
 bash setup-defeedback.sh
 defeedback-linux
 ```
+
+Setup installs REAPER, yabridge, and patched Wine, downloading missing resources when connected. In REAPER, open a track's FX window, select De-Feedback, and click **UI** to display the plugin editor. Use **Options → License Management** there to activate De-Feedback. REAPER requires its own license. See [activation in REAPER](../docs/setup.md#license-management-in-reaper).
+
+**VSTHost is optional and is not needed for the standard installation or activation.** Use `defeedback-linux install vsthost` and `defeedback-linux start vsthost` if you want this [extra host](../docs/setup.md#optional-vsthost), subject to its own license terms. No VSTHost shortcut is created. For a disconnected workstation, first [prepare the offline resources](../docs/installation.md#transfer-to-a-disconnected-target).
 
 Focusrite Scarlett USB is the default. The limit is eight mono paths; eight-mono operation and AES67 audio remain unvalidated.
 

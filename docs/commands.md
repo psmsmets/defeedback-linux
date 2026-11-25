@@ -17,7 +17,9 @@ For a new workstation, first run `bash setup-defeedback.sh` from the Linux bundl
 | `defeedback-linux update` | Fetch project code and install the integration |
 | `defeedback-linux update --check` | Fetch and compare revisions without activating an update |
 | `defeedback-linux update --reaper` | Also update the REAPER runtime |
-| `defeedback-linux open-license-gui` | Open De-Feedback in VSTHost for license activation |
+| `defeedback-linux install vsthost` | Install optional VSTHost from its official x64 package |
+| `defeedback-linux install vsthost --source /path/to/vsthostx64.zip` | Install the complete optional package from a local ZIP or extracted directory |
+| `defeedback-linux start vsthost` | Open De-Feedback in optional VSTHost using patched Wine |
 | `defeedback-linux aes67 install` | Install optional AES67 packages |
 | `defeedback-linux aes67 setup` | Configure the AES67 network, PTP access, and PipeWire |
 | `defeedback-linux aes67 enable --reaper-ini PATH` | Enable experimental early fallback using saved JACK preferences |
@@ -40,11 +42,9 @@ For a new workstation, first run `bash setup-defeedback.sh` from the Linux bundl
 | `defeedback-linux --version` | Show the integration version and installed Git revision, when available |
 | `defeedback-linux --help` | Show commands |
 
-`defeedback-linux license-gui` remains an alias for `defeedback-linux open-license-gui`.
-
 When reporting an issue, include `defeedback-linux --version` and the relevant logs. This version identifies the Linux integration, independently of REAPER, Wine, yabridge, and De-Feedback. Git-based installations also show the installed revision; release archives retain the version without requiring Git. Existing workstations need an integration update to gain this option.
 
-To activate the plugin, close REAPER and run `defeedback-linux open-license-gui`. Open the De-Feedback editor in VSTHost, select **Options → License Management**, and follow the regular De-Feedback / Alpha Labs activation steps for Windows. See [the activation walkthrough and successful activation screenshot](setup.md#license-management-in-vsthost).
+To activate the plugin, start REAPER with `defeedback-linux`, open the De-Feedback FX window, and click **UI** to show its editor. Select **Options → License Management** and follow the regular De-Feedback / Alpha Labs activation steps for Windows. See [activation in REAPER](setup.md#license-management-in-reaper). VSTHost is [an optional extra](setup.md#optional-vsthost); close REAPER before using it. The previous `open-license-gui` and `license-gui` commands have been removed.
 
 Subcommand arguments are forwarded to the underlying launcher or tool. For example:
 

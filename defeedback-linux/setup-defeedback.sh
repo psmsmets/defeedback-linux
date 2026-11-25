@@ -67,6 +67,8 @@ Default installation
   Place the official Windows installer, DefeedbackSetup.exe, in packages/.
   For a new plugin installation, setup opens that installer through Wine.
   Setup can fetch missing REAPER, yabridge, Wine, and APT resources online.
+  Activate in REAPER: open De-Feedback FX, click UI, then Options > License Management.
+  VSTHost is optional: use defeedback-linux install vsthost, then start vsthost.
 
 Options
   -h, --help       Show this help and exit.
@@ -377,25 +379,6 @@ PYINSTALL
 link_command "$app_dir/bin/reaper" "$reaper_dir/reaper"
 install_launcher reaper 'De-Feedback Linux — unofficial integration' "$app_dir/bin/defeedback-linux" 'Unofficial Linux integration for the Alpha Labs De-Feedback plugin'
 
-vsthost_dir="$app_dir/vsthostx64"
-if [[ ! -f $vsthost_dir/vsthost.exe ]]; then
-    for source_dir in "$package_dir/vsthostx64" "$bundle_dir/packages/vsthostx64" \
-        "$bundle_dir/../installers/vsthostx64"; do
-        if [[ -f $source_dir/vsthost.exe && -f $source_dir/license.txt ]]; then
-            cp -a -- "$source_dir" "$work_dir/vsthostx64"
-            mv -T -- "$work_dir/vsthostx64" "$vsthost_dir"
-            break
-        fi
-    done
-fi
-if [[ -f $vsthost_dir/vsthost.exe ]]; then
-    install -Dm 755 -- "$bundle_dir/lib/open-license-gui.sh" "$app_dir/bin/vsthost"
-    link_command "$app_dir/bin/vsthost"
-    install_launcher vsthost 'VSTHost (De-Feedback License)' "$app_dir/bin/vsthost" 'Open De-Feedback in VSTHost without audio'
-else
-    printf '%s\n' 'VSTHost package not found. To install its launcher, add the full package to packages/vsthostx64 and rerun setup.'
-fi
-
 if command -v wpctl >/dev/null && wpctl set-volume @DEFAULT_AUDIO_SINK@ 100%; then
     printf '\nSystem output volume set to 100%%.\n'
 else
@@ -405,6 +388,7 @@ fi
 printf '\nOpen REAPER from the desktop, applications menu, or run reaper in a new terminal.\n'
 printf '%s\n' 'The launcher detects supported USB devices and applies 48000 Hz, 64 samples, 24-bit, and 3 periods.' \
     'It creates the mono routing project on first launch and reopens it on later launches.' \
+    'To activate De-Feedback, open its FX window, click UI, then Options > License Management.' \
     'Run reaper --detect to inspect device selection. If De-Feedback is missing, scan ~/.vst3 in REAPER.'
 
 if [[ $appliance == true ]]; then
