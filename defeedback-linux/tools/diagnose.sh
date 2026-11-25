@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'HELP'
-Usage: defeedback-linux diagnose [--usb-card CARD_ID]
+Usage: defeedback-linux audio diagnose [--usb-card CARD_ID]
 
 Save a local report with system information, ALSA and USB device details,
 PipeWire routing, and recent USB audio kernel messages.

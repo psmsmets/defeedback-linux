@@ -7,9 +7,11 @@ First experimental prerelease of the unofficial Linux integration for Alpha Labs
 ### Included
 
 - Setup and update tools for native Linux REAPER, yabridge, and patched Wine, with De-Feedback license management directly in REAPER through the plugin's **UI** button. VSTHost remains an optional alternative.
-- Explicit `defeedback-linux install vsthost` and `defeedback-linux start vsthost` commands for the optional host. Standard setup does not install VSTHost or create its shortcut; updates retire the previous VSTHost entry points while preserving an installed package.
+- Topic-first commands with general, group, and action help: `audio`, `aes67`, `appliance`, and `vsthost`. Older audio/cleanup and verb-first VSTHost spellings remain compatible but are omitted from the general help.
+- Explicit `defeedback-linux vsthost install` and `defeedback-linux vsthost start` commands for the optional host. Standard setup does not install VSTHost or create its shortcut; updates retire the previous VSTHost entry points while preserving an installed package.
 - Hardware-aware USB selection and independent mono routing, with Focusrite Scarlett as the initial test profile and a maximum of eight paths.
 - Optional Plasma autologin and REAPER autostart, bounded text logs, and diagnostic commands.
+- Post-install guidance and an interactive, default-no offer to enable headless startup; `--appliance` selects it explicitly and `--no-appliance` skips the question.
 - Manual AES67 network/PTP/PipeWire configuration and an opt-in early REAPER fallback for testing.
 - `defeedback-linux --version`, versioned installation metadata, and integration version reporting in session logs and diagnostics.
 

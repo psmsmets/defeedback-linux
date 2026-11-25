@@ -20,6 +20,68 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REPO = 'https://github.com/psmsmets/defeedback-linux.git'
 DEFAULT_BRANCH = 'main'
 
+GROUPS = {
+    'audio': (
+        'Inspect audio devices, collect diagnostics, or print REAPER settings.',
+        {'check': 'Check a device profile; Focusrite Scarlett is the default',
+         'diagnose': 'Save a local system and audio diagnostic report',
+         'ini': 'Print a minimal REAPER audio INI to stdout'},
+        'Example: defeedback-linux audio check focusrite\n'
+        'Use logs --help for saved logs and run --help for REAPER launch options.'),
+    'aes67': (
+        'Configure and manually operate experimental AES67 audio.',
+        {'install': 'Install optional network/PTP/PipeWire packages',
+         'setup': 'Prepare the audio NIC, PTP access, and PipeWire configuration',
+         'enable': 'Opt into experimental REAPER fallback using saved JACK preferences',
+         'disable': 'Disable the experimental startup fallback',
+         'status': 'Show the startup fallback setting',
+         'ptp': 'Run the PTP client in the foreground',
+         'ptp-status': 'Query PTP port state and grandmaster',
+         'audio': 'Run the PipeWire helper after verifying PTP SLAVE state'},
+        'Setup does not start PTP/audio services. End-to-end hardware validation is pending.\n'
+        'Example: defeedback-linux aes67 setup --help'),
+    'appliance': (
+        'Configure an installed workstation for headless USB operation.',
+        {'setup': 'Enable Plasma autologin, REAPER autostart, and workstation settings',
+         'trim': 'Preview optional application removal; --apply performs cleanup'},
+        'First install from the Linux bundle: bash setup-defeedback.sh\n'
+        'Then enable headless startup: defeedback-linux appliance setup\n'
+        'Or combine installation and startup: bash setup-defeedback.sh --appliance\n'
+        'A graphical Plasma session is required. AES67 service startup remains manual.'),
+    'vsthost': (
+        'Install or start the optional VSTHost application.',
+        {'install': 'Download the official x64 package, or use --source for a local package',
+         'start': 'Open De-Feedback in VSTHost with patched Wine'},
+        'Standard activation is in REAPER: De-Feedback FX > UI > Options > License Management.\n'
+        'VSTHost is optional and has its own license; the upstream free package is for private use only.\n'
+        'Example: defeedback-linux vsthost install --help'),
+}
+
+
+def grouped_command(name, arguments):
+    description, actions, note = GROUPS[name]
+    parser = argparse.ArgumentParser(prog='defeedback-linux ' + name,
+        usage='%(prog)s [-h] ACTION [ARGS ...]', description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='Actions:\n' + '\n'.join(f'  {action:<12}{text}' for action, text in actions.items())
+               + '\n\n' + note + '\nUse defeedback-linux ' + name + ' ACTION --help for options.')
+    if not arguments or arguments[0] in ('-h', '--help'):
+        parser.print_help()
+        return 0
+    action, *options = arguments
+    if action not in actions:
+        parser.error('unknown action: ' + action + '; choose ' + ', '.join(actions))
+    if name == 'aes67':
+        if action in ('enable', 'disable', 'status'):
+            return configure_startup(action, options)
+        if action in ('ptp', 'ptp-status', 'audio'):
+            return start_aes67(action, options, os.environ.get('DEFEEDBACK_DEBUG') == '1')
+    route = {'audio': {'check': 'check', 'diagnose': 'diagnose', 'ini': 'ini'},
+             'appliance': {'setup': 'appliance-setup', 'trim': 'trim'},
+             'vsthost': {'install': 'install-vsthost', 'start': 'start-vsthost'},
+             'aes67': {'install': 'aes67-install', 'setup': 'aes67-setup'}}[name][action]
+    return execute(dispatch(route, options))
+
 
 def execute(command):
     """The launcher supervises REAPER; other tools get a bounded command session."""
@@ -152,18 +214,21 @@ def main(argv=None):
     arguments = [value for value in arguments if value != '--debug']
     if debug:
         os.environ['DEFEEDBACK_DEBUG'] = '1'
+    # Keep existing scripts working while the public help uses topic-first commands.
+    aliases = {'check': ('audio', 'check'), 'diagnose': ('audio', 'diagnose'),
+               'ini': ('audio', 'ini'), 'trim': ('appliance', 'trim')}
+    if arguments and arguments[0] in aliases:
+        arguments = [*aliases[arguments[0]], *arguments[1:]]
+    elif len(arguments) >= 2 and arguments[0] in ('install', 'start') and arguments[1] == 'vsthost':
+        arguments = ['vsthost', arguments[0], *arguments[2:]]
     commands = {
         'run': 'Start REAPER with the connected audio device (default)',
         'update': 'Install project updates; add --reaper to update REAPER too',
-        'install': 'Install an optional application (install vsthost)',
-        'start': 'Start an optional application (start vsthost)',
-        'aes67': 'Install, configure, or manually start AES67 audio',
-        'appliance': 'Configure boot startup after installation (appliance setup)',
-        'trim': 'Preview or remove optional applications',
-        'check': 'Check audio devices (Focusrite Scarlett by default)',
-        'diagnose': 'Collect a system and audio diagnostic report',
-        'ini': 'Print REAPER audio configuration to stdout',
         'logs': 'Read workstation logs',
+        'audio': 'Check devices, collect diagnostics, or print audio settings',
+        'aes67': 'Install, configure, or manually start AES67 audio',
+        'appliance': 'Configure headless startup or preview application cleanup',
+        'vsthost': 'Install or start the optional VSTHost application',
     }
     command_width = max(map(len, commands)) + 2
     parser = argparse.ArgumentParser(prog='defeedback-linux',
@@ -174,19 +239,13 @@ def main(argv=None):
                     'REAPER and De-Feedback require separate licenses; neither is included.',
         epilog='Commands:\n' + '\n'.join(f'  {name:<{command_width}}{description}' for name, description in commands.items()) + '\n\n'
                'Without a command, start REAPER.\n'
-               'Use defeedback-linux COMMAND --help for command options.\n\n'
-               'Plugin activation in REAPER:\n'
-               '  Open De-Feedback FX, click UI, then Options > License Management.\n'
-               '  VSTHost is optional: install vsthost, then start vsthost.\n\n'
+               'Use defeedback-linux COMMAND --help, then COMMAND ACTION --help for details.\n\n'
                'Examples:\n'
                '  defeedback-linux\n'
-               '  defeedback-linux update --reaper\n\n'
-               'First-time installation (from the Linux bundle directory):\n'
-               '  bash setup-defeedback.sh\n'
-               'Optional autologin and REAPER autostart, after installation:\n'
                '  defeedback-linux appliance setup\n'
-               'Or install and configure autostart in one step:\n'
-               '  bash setup-defeedback.sh --appliance\n\n'
+               '  defeedback-linux aes67 --help\n\n'
+               'First installation: bash setup-defeedback.sh (from the Linux bundle).\n'
+               'Plugin activation: open De-Feedback FX in REAPER and click UI.\n\n'
                'Products and licensing:\n'
                '  REAPER: https://www.reaper.fm/purchase.php\n'
                '  De-Feedback: https://www.alphalabsaudio.com/defeedback/')
@@ -205,17 +264,8 @@ def main(argv=None):
         command = arguments.pop(0)
         if command not in commands:
             parser.error('unknown command: ' + command)
-        if command in ('install', 'start'):
-            optional = argparse.ArgumentParser(prog='defeedback-linux ' + command,
-                description=('Install optional VSTHost; standard activation is in REAPER.' if command == 'install'
-                             else 'Start optional VSTHost with De-Feedback and patched Wine.'))
-            optional.add_argument('application', choices=('vsthost',))
-            if not arguments or arguments[0] in ('-h', '--help'):
-                optional.print_help()
-                return 0 if arguments else 2
-            application = arguments.pop(0)
-            optional.parse_args([application])
-            return execute(dispatch(command + '-' + application, arguments))
+        if command in GROUPS:
+            return grouped_command(command, arguments)
         if command == 'logs':
             return show_logs(arguments)
         if command == 'update':
@@ -223,34 +273,6 @@ def main(argv=None):
                 return update(arguments)
             with Session('update', debug) as session:
                 return update(arguments, session)
-        if command in ('aes67', 'appliance'):
-            actions = ('install', 'setup', 'ptp', 'ptp-status', 'audio', 'enable', 'disable', 'status') if command == 'aes67' else ('setup',)
-            description = ('Install or configure optional AES67 audio.' if command == 'aes67' else
-                           'Configure desktop autologin, REAPER autostart, and power settings.\n'
-                           'Requires an installed workstation. AES67 startup remains manual.')
-            epilog = None if command == 'aes67' else (
-                'First install from the Linux bundle: bash setup-defeedback.sh\n'
-                'Then enable boot startup: defeedback-linux appliance setup\n'
-                'For both in one step: bash setup-defeedback.sh --appliance')
-            aes = argparse.ArgumentParser(prog='defeedback-linux ' + command,
-                                          description=description, epilog=epilog,
-                                          formatter_class=argparse.RawDescriptionHelpFormatter)
-            if command == 'appliance':
-                aes.add_argument('action', choices=actions, metavar='setup',
-                                 help='Enable boot startup on the installed workstation')
-            else:
-                aes.add_argument('action', choices=actions)
-            if not arguments or arguments[0] in ('-h', '--help'):
-                aes.print_help()
-                return 0 if arguments else 2
-            action = arguments.pop(0)
-            if action not in actions:
-                aes.error('choose ' + ' or '.join(actions))
-            if command == 'aes67' and action in ('enable', 'disable', 'status'):
-                return configure_startup(action, arguments)
-            if command == 'aes67' and action in ('ptp', 'ptp-status', 'audio'):
-                return start_aes67(action, arguments, debug)
-            command = command + '-' + action
         return execute(dispatch(command, arguments))
     except KeyboardInterrupt:
         return 130

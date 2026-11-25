@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    printf 'Usage: defeedback-linux check [focusrite|sq|cq|avantis|dlive] [--launch]\n'
+    printf 'Usage: defeedback-linux audio check [focusrite|sq|cq|avantis|dlive] [--launch]\n'
     printf 'The default profile is focusrite. Use --launch as the second argument to start REAPER.\n'
 }
 

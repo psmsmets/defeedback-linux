@@ -12,7 +12,7 @@ for option in "$@"; do
             [[ $option != --apply ]] || apply=true ;;
         --autoremove) autoremove=true ;;
         -h|--help)
-            printf '%s\n' 'Usage: defeedback-linux trim [--check|--apply] [--autoremove]' \
+            printf '%s\n' 'Usage: defeedback-linux appliance trim [--check|--apply] [--autoremove]' \
                 'Preview removal by default. --apply removes the listed applications.' \
                 '--autoremove also removes unused automatic dependencies, with the same runtime protection.' \
                 'Run on Ubuntu Studio as the regular workstation user.'

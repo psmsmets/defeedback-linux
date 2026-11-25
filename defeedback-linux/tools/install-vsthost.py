@@ -30,7 +30,7 @@ def extract(archive, target):
 def install(source, app):
     destination = app / 'vsthostx64'
     if (destination / 'vsthost.exe').is_file() and (destination / 'license.txt').is_file():
-        print('VSTHost is already installed. Run defeedback-linux start vsthost.')
+        print('VSTHost is already installed. Run defeedback-linux vsthost start.')
         return
     if destination.exists() or destination.is_symlink():
         raise RuntimeError('Incomplete VSTHost installation; move it aside before reinstalling: ' + str(destination))
@@ -63,11 +63,11 @@ def install(source, app):
     print('VSTHost installed: ' + str(destination))
     print('The upstream free package is for private use only; its license excludes commercial or professional use.')
     print('Review the package terms: ' + str(destination / 'license.txt'))
-    print('Run defeedback-linux start vsthost. Standard activation remains available directly in REAPER.')
+    print('Run defeedback-linux vsthost start. Standard activation remains available directly in REAPER.')
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog='defeedback-linux install vsthost', description=__doc__,
+    parser = argparse.ArgumentParser(prog='defeedback-linux vsthost install', description=__doc__,
         epilog='VSTHost has its own license terms. The upstream free package is for private use only.')
     parser.add_argument('--source', type=Path, help='complete local x64 package directory or ZIP instead of downloading')
     args = parser.parse_args(argv)

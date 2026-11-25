@@ -4,7 +4,7 @@ All logging is text-only. Normal operation records startup, selected audio devic
 
 ## Check the autostart service
 
-Run these commands as the workstation user, without sudo. The REAPER user service is installed by `defeedback-linux appliance setup`; a normal installation does not enable autostart.
+Run these commands as the workstation user, without sudo. The REAPER user service is installed by `defeedback-linux appliance setup` or by accepting the installer's optional headless step. Declining that step leaves autostart unchanged.
 
 | Command | What it shows |
 | --- | --- |
@@ -44,8 +44,8 @@ Use a controlled test with additional context:
 
 ```bash
 defeedback-linux --debug
-defeedback-linux diagnose --debug
-defeedback-linux check avantis --launch --debug
+defeedback-linux audio diagnose --debug
+defeedback-linux audio check avantis --launch --debug
 ```
 
 `--debug` can appear before or after a subcommand. It adds bounded, read-only OS, ALSA-device, network, and PipeWire-settings snapshots. REAPER sessions also enable extra Wine/PipeWire text messages. No environment-variable dump or PCM/audio recording is performed. INI output remains clean on stdout, including when `--debug` is supplied.
@@ -61,7 +61,7 @@ For manual AES67 operation, use separate terminals:
 ```bash
 defeedback-linux aes67 ptp
 defeedback-linux aes67 audio
-defeedback-linux check avantis --launch
+defeedback-linux audio check avantis --launch
 ```
 
 The PTP command uses the configured NIC and asks sudo to run `ptp4l`. Use only one PTP client per NIC. Confirm the expected grandmaster before starting audio. The audio command refuses startup without PTP SLAVE state. The audio helper and AES67-launched REAPER monitor link, PTP port state, and AES67 source/return endpoint presence every 15 seconds; only changes are logged. External checks have short timeouts. `--debug` is available for these foreground helpers too.

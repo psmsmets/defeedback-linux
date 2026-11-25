@@ -4,13 +4,13 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: defeedback-linux start vsthost [--virtual-desktop]
+Usage: defeedback-linux vsthost start [--virtual-desktop]
 
 Optional VSTHost alternative. Standard activation is in REAPER: open the
 De-Feedback FX window, click UI, then Options > License Management.
 VSTHost is not required for that workflow. Its own license terms apply.
 
-Install this optional host first with defeedback-linux install vsthost.
+Install this optional host first with defeedback-linux vsthost install.
 Opens the installed De-Feedback VST3 in 64-bit VSTHost without an audio
 driver. Close REAPER and VSTHost first. No desktop shortcut is created.
 
@@ -46,7 +46,7 @@ if pgrep -u "$EUID" -x reaper >/dev/null || pgrep -u "$EUID" -ix 'vsthost[.]exe'
 fi
 
 vsthost="$HOME/.local/share/defeedback/vsthostx64/vsthost.exe"
-[[ -f $vsthost && -f ${vsthost%/*}/license.txt ]] || fail 'VSTHost is not installed. Run defeedback-linux install vsthost first.'
+[[ -f $vsthost && -f ${vsthost%/*}/license.txt ]] || fail 'VSTHost is not installed. Run defeedback-linux vsthost install first.'
 vsthost=$(realpath -- "$vsthost")
 
 export WINEPREFIX="$HOME/.wine-defeedback"

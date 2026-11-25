@@ -12,6 +12,8 @@ The integration scripts are licensed under [MIT](LICENSE). Third-party software 
 
 ---
 
+## About this project
+
 **Experimental project.** USB operation has been validated on the documented hardware. AES67 integration is under development and still requires end-to-end hardware testing. See [validation status](docs/overview.md#validation-status) for the scope of the completed tests.
 
 Run the Windows De-Feedback VST3 on Ubuntu Studio with native Linux REAPER using yabridge and patched Wine. The hardware-aware launcher selects a supported USB device and opens its mono routing project. The goal is a headless appliance that loads the appropriate audio settings at boot for USB or AES67. USB selection is implemented. Boot without a monitor has been validated. Full automatic AES67 service startup is planned. See [startup selection](https://github.com/psmsmets/defeedback-linux/blob/main/docs/setup.md#startup-selection).
@@ -28,6 +30,38 @@ See [test hardware and measurements](docs/overview.md) for validated configurati
 After installation, run `defeedback-linux` to start REAPER with the detected audio device. Use `defeedback-linux --help` for all available commands and `defeedback-linux --version` when reporting an issue. See the [changelog](CHANGELOG.md) for release notes.
 
 To activate De-Feedback, open its FX window in REAPER and click **UI** to show the plugin editor, then choose **Options → License Management**. Patched Wine supports this directly in REAPER; VSTHost is optional. See [activation in REAPER](docs/setup.md#license-management-in-reaper).
+
+## Install and enable headless startup
+
+Use the Ubuntu Studio Plasma desktop for installation and activation. Connect a Focusrite Scarlett over USB for the first audio test. Copy the [Linux bundle](defeedback-linux/), open a terminal in that directory, and place the [official Windows installer](https://www.alphalabsaudio.com/defeedback/) at `packages/DefeedbackSetup.exe`. Create `packages/` first if needed, then run:
+
+```bash
+bash setup-defeedback.sh
+defeedback-linux
+```
+
+Activate De-Feedback through **UI → Options → License Management**, check the physical audio path, and close REAPER. To enable automatic login and REAPER startup for operation without a monitor or keyboard:
+
+```bash
+defeedback-linux appliance setup
+```
+
+Reboot when ready and verify the saved routing and audio path. REAPER runs in an automatically logged-in graphical Plasma session. Monitor-free boot and EVO8 autostart have been validated on the reference Beelink; automatic AES67 services and failure recovery remain planned. See [headless setup and appliance settings](docs/appliance.md).
+
+The installer shows these next steps and, in an interactive terminal, offers to enable headless startup with **no** as the default. You can decline until activation and audio testing are complete. Use `bash setup-defeedback.sh --appliance` to install and configure startup together, or `--no-appliance` to skip the question. Neither option reboots the computer.
+
+## Commands and help
+
+`defeedback-linux --help` shows the command groups. Each group has its own help, and each action describes its options:
+
+```bash
+defeedback-linux appliance --help
+defeedback-linux aes67 --help
+defeedback-linux vsthost --help
+defeedback-linux vsthost install --help
+```
+
+See the [command overview](docs/commands.md) for audio checks, logs, updates, and optional tools.
 
 ## Screenshots
 

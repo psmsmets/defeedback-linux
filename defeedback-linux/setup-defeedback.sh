@@ -50,9 +50,9 @@ EOF
     install -Dm 755 -- "$entry" "$desktop_dir/defeedback-$id.desktop"
 }
 
-usage='Usage: bash setup-defeedback.sh [--offline] [--appliance] [--import-vst3] [packages-directory]'
+usage='Usage: bash setup-defeedback.sh [--offline] [--appliance|--no-appliance] [--import-vst3] [packages-directory]'
 import_vst3=false
-appliance=false
+appliance=ask
 offline=false
 while [[ ${1:-} == -* ]]; do
     case $1 in
@@ -68,7 +68,8 @@ Default installation
   For a new plugin installation, setup opens that installer through Wine.
   Setup can fetch missing REAPER, yabridge, Wine, and APT resources online.
   Activate in REAPER: open De-Feedback FX, click UI, then Options > License Management.
-  VSTHost is optional: use defeedback-linux install vsthost, then start vsthost.
+  VSTHost is optional: use defeedback-linux vsthost install, then vsthost start.
+  At the end, setup shows the next steps and offers headless startup interactively.
 
 Options
   -h, --help       Show this help and exit.
@@ -82,6 +83,9 @@ Options
   --appliance      Configure the workstation for dedicated use, including
                    automatic login, REAPER autostart, and power settings.
                    Run as the user who should log in automatically.
+  --no-appliance   Skip the headless startup question. Keep any existing
+                   startup configuration; this option does not disable it.
+                   Without either flag, the interactive question defaults to no.
 
 Package directory
   The optional packages-directory argument points to an existing directory
@@ -102,7 +106,12 @@ EOF
             exit 0
             ;;
         --import-vst3) import_vst3=true ;;
-        --appliance) appliance=true ;;
+        --appliance)
+            [[ $appliance != false ]] || fail 'Choose either --appliance or --no-appliance.'
+            appliance=true ;;
+        --no-appliance)
+            [[ $appliance != true ]] || fail 'Choose either --appliance or --no-appliance.'
+            appliance=false ;;
         --offline) offline=true ;;
         *) fail "$usage" ;;
     esac
@@ -385,15 +394,13 @@ else
     printf '\nWarning: Could not set the default system output volume to 100%%.\n' >&2
 fi
 
-printf '\nOpen REAPER from the desktop, applications menu, or run reaper in a new terminal.\n'
+printf '\nOpen REAPER from the desktop, applications menu, or run defeedback-linux in a new terminal.\n'
 printf '%s\n' 'The launcher detects supported USB devices and applies 48000 Hz, 64 samples, 24-bit, and 3 periods.' \
     'It creates the mono routing project on first launch and reopens it on later launches.' \
     'To activate De-Feedback, open its FX window, click UI, then Options > License Management.' \
-    'Run reaper --detect to inspect device selection. If De-Feedback is missing, scan ~/.vst3 in REAPER.'
+    'Run defeedback-linux run --detect to inspect device selection. If De-Feedback is missing, scan ~/.vst3 in REAPER.'
 
-if [[ $appliance == true ]]; then
-    bash "$bundle_dir/tools/setup-appliance.sh"
-else
+if [[ $appliance != true ]]; then
     # Migrate the old managed service even when only reinstalling the application.
     unit="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/defeedback-reaper.service"
     if [[ -f $unit ]] && grep -Fxq 'ExecStart="%h/.local/opt/REAPER/reaper"' "$unit"; then
@@ -403,3 +410,6 @@ else
         systemctl --user daemon-reload
     fi
 fi
+
+source "$bundle_dir/lib/setup-next-steps.sh"
+show_setup_next_steps "$appliance" "$bundle_dir/tools/setup-appliance.sh"

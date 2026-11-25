@@ -47,7 +47,7 @@ Download the Windows De-Feedback installer manually in your browser. On the Alph
 
 Create `packages/` if needed and place the Windows installer at `packages/DefeedbackSetup.exe`. The installer also presents the license terms during setup. Activate De-Feedback [directly in REAPER](setup.md#license-management-in-reaper), using its **UI** button to open the plugin editor.
 
-VSTHost is an optional extra, not a prerequisite. After setup, use `defeedback-linux install vsthost` to download and install the official x64 package, then `defeedback-linux start vsthost`. To use a local package, pass `--source /path/to/vsthostx64.zip` or the extracted package directory to the install command. The complete package, including its license and companion files, is retained. Setup does not install it automatically or create a shortcut.
+VSTHost is an optional extra, not a prerequisite. After setup, use `defeedback-linux vsthost install` to download and install the official x64 package, then `defeedback-linux vsthost start`. To use a local package, pass `--source /path/to/vsthostx64.zip` or the extracted package directory to the install command. The complete package, including its license and companion files, is retained. Setup does not install it automatically or create a shortcut.
 
 For manual download instructions during offline preparation, use `bash download-resources.sh --only vsthost --open-manual`. Its manifest entry uses `optional-manual`, which is skipped during normal resource preparation. Keep vendor installers local and retain their license files.
 

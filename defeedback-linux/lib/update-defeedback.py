@@ -26,6 +26,7 @@ RESOURCES = {
     'lib/cli.py': 'lib/cli.py',
     'lib/project_version.py': 'lib/project_version.py',
     'lib/startup_config.py': 'lib/startup_config.py',
+    'lib/setup-next-steps.sh': 'lib/setup-next-steps.sh',
     'lib/session_log.py': 'lib/session_log.py',
     'lib/log_commands.py': 'lib/log_commands.py',
     'lib/aes67_runtime.py': 'lib/aes67_runtime.py',

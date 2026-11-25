@@ -19,7 +19,17 @@ defeedback-linux
 
 Setup installs REAPER, yabridge, and patched Wine, downloading missing resources when connected. In REAPER, open a track's FX window, select De-Feedback, and click **UI** to display the plugin editor. Use **Options → License Management** there to activate De-Feedback. REAPER requires its own license. See [activation in REAPER](../docs/setup.md#license-management-in-reaper).
 
-**VSTHost is optional and is not needed for the standard installation or activation.** Use `defeedback-linux install vsthost` and `defeedback-linux start vsthost` if you want this [extra host](../docs/setup.md#optional-vsthost), subject to its own license terms. No VSTHost shortcut is created. For a disconnected workstation, first [prepare the offline resources](../docs/installation.md#transfer-to-a-disconnected-target).
+## Headless USB operation
+
+After activation and an initial audio test, close REAPER and enable automatic Plasma login and REAPER startup:
+
+```bash
+defeedback-linux appliance setup
+```
+
+Reboot when ready and test the audio path. The installer also offers this step at the end of an interactive installation, defaulting to no. Use `bash setup-defeedback.sh --appliance` to select it in advance or `--no-appliance` to skip the question. Noninteractive setup only prints the next steps unless `--appliance` was supplied. Existing startup configuration is retained. See [headless operation](../docs/appliance.md).
+
+**VSTHost is optional and is not needed for the standard installation or activation.** Use `defeedback-linux vsthost install` and `defeedback-linux vsthost start` if you want this [extra host](../docs/setup.md#optional-vsthost), subject to its own license terms. No VSTHost shortcut is created. For a disconnected workstation, first [prepare the offline resources](../docs/installation.md#transfer-to-a-disconnected-target).
 
 Focusrite Scarlett USB is the default. The limit is eight mono paths; eight-mono operation and AES67 audio remain unvalidated.
 
@@ -29,7 +39,7 @@ The goal is headless operation with the correct settings loaded at boot for USB 
 
 ```bash
 defeedback-linux
-defeedback-linux check
+defeedback-linux audio check
 defeedback-linux logs --journal
 defeedback-linux update
 defeedback-linux --help

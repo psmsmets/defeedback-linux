@@ -139,28 +139,31 @@ def prepare_ini(path, seed, card):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    ini_mode = '--print-ini' in sys.argv[1:]
+    parser = argparse.ArgumentParser(prog='defeedback-linux audio ini' if ini_mode else 'defeedback-linux run',
+        description='Print a minimal REAPER device INI without launching audio.' if ini_mode else __doc__)
     parser.add_argument('--debug', action='store_true', default=os.environ.get('DEFEEDBACK_DEBUG') == '1',
                         help='extra text diagnostics without recording audio')
     parser.add_argument('--device', default=os.environ.get('DEFEEDBACK_DEVICE', 'auto'),
-                        help='auto, aes67, focusrite, evo8, behringer, cq, sq, qu, or an exact ALSA card ID')
+                        help=('auto, focusrite, evo8, behringer, cq, sq, qu, or an exact ALSA card ID' if ini_mode
+                              else 'auto, aes67, focusrite, evo8, behringer, cq, sq, qu, or an exact ALSA card ID'))
     parser.add_argument('--channels', type=int, choices=(1, 2, 4, 5, 8),
-                        default=os.environ.get('DEFEEDBACK_CHANNELS'), help='override the default path count')
-    parser.add_argument('--print-ini', action='store_true',
-                        help='print a minimal device INI to stdout without writing files or launching')
-    parser.add_argument('--inputs', type=int, help='capture port count for offline --print-ini')
-    parser.add_argument('--outputs', type=int, help='playback port count for offline --print-ini')
-    parser.add_argument('--detect', action='store_true', help='print the selected device and routing without launching')
+                        default=os.environ.get('DEFEEDBACK_CHANNELS'),
+                        help=argparse.SUPPRESS if ini_mode else 'override the default path count')
+    parser.add_argument('--print-ini', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--inputs', type=int, help='capture port count for offline INI generation' if ini_mode else argparse.SUPPRESS)
+    parser.add_argument('--outputs', type=int, help='playback port count for offline INI generation' if ini_mode else argparse.SUPPRESS)
+    parser.add_argument('--detect', action='store_true', help=argparse.SUPPRESS if ini_mode else 'print the selected device and routing without launching')
     parser.add_argument('--missing-audio', choices=('skip', 'error'),
                         default=os.environ.get('DEFEEDBACK_MISSING_AUDIO', 'skip'),
-                        help='skip startup successfully (default) or report an error when USB audio is absent')
-    parser.add_argument('--raw', action='store_true', help='launch with saved REAPER preferences and the supplied arguments')
+                        help=argparse.SUPPRESS if ini_mode else 'skip startup successfully (default) or report an error when USB audio is absent')
+    parser.add_argument('--raw', action='store_true', help=argparse.SUPPRESS if ini_mode else 'launch with saved REAPER preferences and the supplied arguments')
     args, reaper_args = parser.parse_known_args()
     if args.device == 'aes67' and (args.raw or args.print_ini):
         parser.error('--device aes67 uses the managed JACK profile; it cannot be combined with --raw or --print-ini')
     if args.inputs is not None or args.outputs is not None:
         if not args.print_ini or args.inputs is None or args.outputs is None:
-            parser.error('--inputs and --outputs require --print-ini and must be supplied together')
+            parser.error('Use defeedback-linux audio ini with both --inputs and --outputs')
         if min(args.inputs, args.outputs) < 1:
             parser.error('Input and output port counts must be positive')
         if not re.fullmatch(r'hw:[a-zA-Z0-9_-]+', args.device):

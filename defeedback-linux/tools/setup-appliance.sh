@@ -12,6 +12,7 @@ if [[ ${1:-} == --help || ${1:-} == -h ]]; then
         'Enables desktop autologin, REAPER autostart, and appliance power settings.' \
         'Requires an installed workstation. First run bash setup-defeedback.sh from the Linux bundle.' \
         'To install and configure autostart together, run bash setup-defeedback.sh --appliance.' \
+        'Interactive installation also offers this step, defaulting to no; --no-appliance skips the question.' \
         'USB settings load at launch. AES67 startup remains manual.' \
         'Run as the account that should log in automatically, from its Ubuntu Studio Plasma desktop.'
     exit 0

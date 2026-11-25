@@ -4,7 +4,7 @@ export LC_ALL=C
 
 usage() {
     cat <<'EOF'
-Usage: bash setup-aes67.sh [--network link-local|dhcp|existing] [--quantum SAMPLES] [--network-latency MS] [INTERFACE [RETURN_MULTICAST_IP]]
+Usage: defeedback-linux aes67 setup [--network link-local|dhcp|existing] [--quantum SAMPLES] [--network-latency MS] [INTERFACE [RETURN_MULTICAST_IP]]
 
 Prepare an optional PipeWire AES67 test for Avantis or dLive at 48 kHz.
 Use a wired interface with a PTP hardware clock and an unused 239.69.x.x

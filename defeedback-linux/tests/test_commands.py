@@ -72,16 +72,24 @@ class Commands(unittest.TestCase):
 
     def test_dispatch(self):
         for args, suffix in [([], 'reaper-launch.py'), (['--device', 'cq'], 'reaper-launch.py'),
+                             (['vsthost', 'install'], 'install-vsthost.py'),
+                             (['vsthost', 'install', '--source', '/path with spaces/package.zip'], 'install-vsthost.py'),
+                             (['vsthost', 'start'], 'start-vsthost.sh'),
+                             (['vsthost', 'start', '--virtual-desktop'], 'start-vsthost.sh'),
                              (['install', 'vsthost'], 'install-vsthost.py'),
                              (['install', 'vsthost', '--source', '/path with spaces/package.zip'], 'install-vsthost.py'),
                              (['start', 'vsthost'], 'start-vsthost.sh'),
                              (['start', 'vsthost', '--virtual-desktop'], 'start-vsthost.sh'),
                              (['check', 'avantis', '--launch'], 'check-audio.sh'),
+                             (['audio', 'check', 'avantis', '--launch'], 'check-audio.sh'),
                              (['diagnose', '--usb-card', 'SQ'], 'diagnose.sh'),
+                             (['audio', 'diagnose', '--usb-card', 'SQ'], 'diagnose.sh'),
                              (['aes67', 'install'], 'install-aes67.sh'),
                              (['aes67', 'setup', '--quantum', '96'], 'setup-aes67.sh'),
                              (['appliance', 'setup'], 'setup-appliance.sh'),
+                             (['appliance', 'trim', '--apply', '--autoremove'], 'trim-workstation.sh'),
                              (['trim', '--apply', '--autoremove'], 'trim-workstation.sh'),
+                             (['audio', 'ini', '--device', 'cq'], 'reaper-launch.py'),
                              (['ini', '--device', 'cq'], 'reaper-launch.py')]:
             with self.subTest(args=args), patch.object(cli, 'execute', return_value=0) as execute:
                 self.assertEqual(cli.main(args), 0)
@@ -95,6 +103,8 @@ class Commands(unittest.TestCase):
                     self.assertEqual(command[2:], ['avantis', '--launch'])
                 if args and args[0] in ('install', 'start'):
                     self.assertEqual(command[2:], args[2:])
+                if args and args[0] in ('vsthost', 'appliance', 'aes67', 'audio'):
+                    self.assertEqual(command[2:], (['--print-ini'] if args[:2] == ['audio', 'ini'] else []) + args[2:])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             cli.main(['unknown'])
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
@@ -105,6 +115,43 @@ class Commands(unittest.TestCase):
         with patch.object(cli, 'execute', return_value=0) as execute, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(cli.main(['appliance', '--help']), 0)
             execute.assert_not_called()
+
+    def test_group_help_does_not_execute_tools_or_create_logs(self):
+        for group, actions in [('audio', ('check', 'diagnose', 'ini')),
+                               ('vsthost', ('install', 'start')),
+                               ('appliance', ('setup', 'trim')),
+                               ('aes67', ('install', 'setup', 'ptp', 'ptp-status', 'audio', 'enable', 'disable', 'status'))]:
+            with self.subTest(group=group), patch.object(cli, 'execute') as execute, \
+                    patch.object(cli, 'Session') as session, contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(cli.main([group, '--help']), 0)
+                self.assertIn('defeedback-linux ' + group, output.getvalue())
+                for action in actions:
+                    self.assertIn(action, output.getvalue())
+                execute.assert_not_called()
+                session.assert_not_called()
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            cli.main(['--help'])
+        commands = output.getvalue().split('Commands:\n')[1].split('\n\n')[0]
+        self.assertEqual(len(commands.splitlines()), 7)
+        for hidden in ('install', 'start', 'check', 'diagnose', 'ini', 'trim'):
+            self.assertNotIn('  ' + hidden + ' ', commands)
+
+    def test_action_help_uses_the_public_path_without_launching_audio(self):
+        for group, action in [('audio', 'check'), ('audio', 'diagnose'), ('audio', 'ini'),
+                              ('vsthost', 'install'), ('vsthost', 'start'),
+                              ('appliance', 'setup'), ('appliance', 'trim'),
+                              ('aes67', 'install'), ('aes67', 'setup'), ('aes67', 'enable'),
+                              ('aes67', 'disable'), ('aes67', 'status'), ('aes67', 'ptp'),
+                              ('aes67', 'ptp-status'), ('aes67', 'audio')]:
+            with self.subTest(group=group, action=action), tempfile.TemporaryDirectory() as directory:
+                environment = dict(os.environ, HOME=directory, XDG_STATE_HOME=str(Path(directory) / 'state'))
+                result = subprocess.run([sys.executable, str(BUNDLE / 'defeedback-linux'), group, action, '--help'],
+                                        text=True, capture_output=True, env=environment)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('defeedback-linux ' + group + ' ' + action, result.stdout)
+                self.assertFalse((Path(directory) / 'state').exists())
+                if (group, action) == ('audio', 'ini'):
+                    self.assertNotIn('--raw', result.stdout)
 
     def test_generated_ini_without_seed(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -183,11 +230,11 @@ class Commands(unittest.TestCase):
                 self.assertEqual((app / target).read_bytes(), (BUNDLE / source).read_bytes())
             self.assertTrue((home / '.local/bin/defeedback-linux').is_symlink())
             for action in ('install', 'start'):
-                result = subprocess.run([str(home / '.local/bin/defeedback-linux'), action, 'vsthost', '--help'],
+                result = subprocess.run([str(home / '.local/bin/defeedback-linux'), 'vsthost', action, '--help'],
                                         text=True, capture_output=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn('defeedback-linux ' + action + ' vsthost', result.stdout)
-            result = subprocess.run([str(home / '.local/bin/defeedback-linux'), 'ini', '--device',
+                self.assertIn('defeedback-linux vsthost ' + action, result.stdout)
+            result = subprocess.run([str(home / '.local/bin/defeedback-linux'), 'audio', 'ini', '--device',
                                      'hw:EVO8', '--inputs', '4', '--outputs', '4'],
                                     text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
