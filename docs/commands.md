@@ -41,7 +41,7 @@ For a new workstation, first run `bash setup-defeedback.sh` from the Linux bundl
 
 `defeedback-linux license-gui` remains an alias for `defeedback-linux open-license-gui`.
 
-To activate the plugin, close REAPER and run `defeedback-linux open-license-gui`. Open the De-Feedback editor in VSTHost, select **Options → License Management**, and follow the regular De-Feedback / Alpha Labs activation steps for Windows. See [the activation walkthrough](setup.md#license-management-in-vsthost); paid-license activation on Linux remains untested.
+To activate the plugin, close REAPER and run `defeedback-linux open-license-gui`. Open the De-Feedback editor in VSTHost, select **Options → License Management**, and follow the regular De-Feedback / Alpha Labs activation steps for Windows. See [the activation walkthrough and successful activation screenshot](setup.md#license-management-in-vsthost).
 
 Subcommand arguments are forwarded to the underlying launcher or tool. For example:
 
@@ -57,7 +57,7 @@ AES67 remains a manual network/PTP/audio startup; `aes67 setup` prepares configu
 
 The goal is a headless appliance: power on and load the correct settings and mono routing for the connected USB interface or AES67 on the second NIC (`enp2s0` on the reference Beelink). The control/Internet NIC remains separate.
 
-`defeedback-linux appliance setup` enables Plasma desktop autologin, REAPER autostart, and power settings. It is opt-in; normal installation does not enable it. USB detection and per-device configuration already run at launch. REAPER and the plugin still require a graphical session even when the intended deployment has no attached screen or keyboard. Boot without a monitor has been validated on the reference Beelink. Paid-license activation and failure recovery remain unvalidated. This is not a console-only audio service.
+`defeedback-linux appliance setup` enables Plasma desktop autologin, REAPER autostart, and power settings. It is opt-in; normal installation does not enable it. USB detection and per-device configuration already run at launch. REAPER and the plugin still require a graphical session even when the intended deployment has no attached screen or keyboard. Boot without a monitor has been validated on the reference Beelink. EVO8 appliance autostart with four mono instances of the activated plugin has also been confirmed; see [validation status](overview.md#validation-status). Failure recovery remains unvalidated. This is not a console-only audio service.
 
 Startup selects USB first. An opt-in AES67 fallback now attempts REAPER with four mono paths by default (maximum eight) before readiness tests finish; the supervisor logs link, PTP, and endpoint state in parallel. It is disabled by default and remains a hardware test facility. See [activation](aes67.md#enable-experimental-startup-fallback) and [startup selection](setup.md#startup-selection). Automatic PTP/audio service startup, routing, and recovery are not implemented. No audio hotplug switching is implemented while REAPER is running.
 

@@ -14,7 +14,7 @@ bundled packages and installers directories. Close REAPER and VSTHost first.
 
 Open the De-Feedback editor, then Options > License Management. Follow
 the regular De-Feedback / Alpha Labs activation steps for Windows there.
-Paid-license activation on Linux remains untested.
+Activation has been confirmed on the reference Beelink Linux workstation.
 EOF
 }
 

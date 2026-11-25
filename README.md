@@ -16,3 +16,15 @@ This project grew out of a personal preference for Linux and difficulty obtainin
 See [test hardware and measurements](docs/overview.md) for validated configurations.
 
 After installation, run `defeedback-linux` to start REAPER with the detected audio device. Use `defeedback-linux --help` for all available commands.
+
+## Screenshots
+
+REAPER after automatic appliance startup on the reference Beelink, with an Audient EVO8 detected over USB and four mono paths using the activated De-Feedback plugin. See [startup and routing](docs/setup.md#dedicated-workstation-startup).
+
+![REAPER 7.86 with the Audient EVO8 and four mono De-Feedback instances after appliance autostart](docs/images/defeedback-reaper-evo8.png)
+
+Successful De-Feedback activation in VSTHost, with the installed REAPER and license-management desktop shortcuts visible. Run `defeedback-linux open-license-gui`, then follow the [activation steps](docs/setup.md#license-management-in-vsthost).
+
+![De-Feedback license window showing Status: Activated in VSTHost, alongside the desktop shortcuts](docs/images/defeedback-license-vsthost.png)
+
+These results were confirmed on 25 November 2026. See [validation status](docs/overview.md#validation-status) for the tested configurations and remaining work.

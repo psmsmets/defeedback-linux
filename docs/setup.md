@@ -50,7 +50,7 @@ The launcher uses `reaper/create-template.lua` to create a mono project for the 
 
 ## Dedicated workstation startup
 
-The goal is headless operation with audio settings selected at boot for the connected USB interface or AES67 on the second NIC. USB selection is implemented; automatic AES67 startup remains planned. A graphical Plasma session is still required. Boot without a monitor has been validated on the reference Beelink. Paid-license activation remains untested.
+The goal is headless operation with audio settings selected at boot for the connected USB interface or AES67 on the second NIC. USB selection is implemented; automatic AES67 startup remains planned. A graphical Plasma session is still required. Boot without a monitor has been validated on the reference Beelink. De-Feedback activation and EVO8 appliance autostart with four mono instances have been confirmed; see [validation status](overview.md#validation-status).
 
 Installation and boot startup are separate steps. First run `bash setup-defeedback.sh` from the Linux bundle directory. After installation, optionally enable desktop autologin and REAPER autostart:
 
@@ -72,6 +72,10 @@ sudo systemctl unmask ModemManager.service
 ```
 
 Reboot when ready and verify that the desktop and REAPER appear. Check the REAPER service with `systemctl --user status defeedback-reaper.service` and its boot log with `journalctl --user -u defeedback-reaper.service -b`. See [service status and troubleshooting](logging.md#check-the-autostart-service) for the status commands and their meaning. Test the physical power button after saving the project.
+
+The reference Beelink successfully started REAPER 7.86 automatically with the Audient EVO8 connected and reopened its four-mono-path project with the activated De-Feedback plugin. The screenshot shows ALSA EVO8 at 48 kHz, 24-bit, and 64 samples, with each plugin exposing one input and one output.
+
+![REAPER after appliance autostart with the Audient EVO8 and four mono De-Feedback instances](images/defeedback-reaper-evo8.png)
 
 To stop REAPER from starting at login, run `systemctl --user disable defeedback-reaper.service`. To turn off automatic login, run `sudo kwriteconfig6 --file /etc/sddm.conf --group Autologin --key User ""`. Setup saves an existing `/etc/sddm.conf` to `/etc/sddm.conf.before-defeedback` on the first run. To restore the system sleep and power-button defaults, remove the `90-defeedback-appliance.conf` files from `/etc/systemd/sleep.conf.d/` and `/etc/systemd/logind.conf.d/`, then reboot. Adjust the corresponding desktop preferences in Plasma System Settings.
 
@@ -125,7 +129,11 @@ To activate De-Feedback, use the complete 64-bit VSTHost folder in `packages/vst
 3. Follow the regular **De-Feedback / Alpha Labs activation steps for Windows** in that window. Enter the credentials requested by Alpha Labs there and complete the activation prompts. The Linux command opens the interface; activation is handled by De-Feedback itself. See [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/) for vendor instructions and support.
 4. Wait for the activation prompts to finish, close VSTHost, and start REAPER with `defeedback-linux`.
 
-The VSTHost desktop shortcut opens the same permanent prefix. Paid-license activation on Linux remains untested; see [validation status](overview.md#validation-status). REAPER requires its own separate license.
+The VSTHost desktop shortcut opens the same permanent prefix. Activation succeeded on the reference Beelink, and the activated plugin subsequently loaded in REAPER with four mono EVO8 paths; see [validation status](overview.md#validation-status). REAPER requires its own separate license.
+
+![De-Feedback license management in VSTHost showing Status: Activated and the installed desktop shortcuts](images/defeedback-license-vsthost.png)
+
+The desktop shortcuts provide two entry points: **De-Feedback Linux** starts REAPER through the hardware-aware launcher with the device's mono project, while **VSTHost (De-Feedback License)** opens De-Feedback for activation. Close VSTHost before starting REAPER.
 
 ## Automatic USB startup
 
