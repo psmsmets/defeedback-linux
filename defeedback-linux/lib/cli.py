@@ -14,6 +14,7 @@ from session_log import Session, debug_snapshot, run_logged
 from log_commands import show_logs
 from aes67_runtime import start as start_aes67
 from startup_config import configure as configure_startup
+from project_version import describe_version
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REPO = 'https://github.com/psmsmets/defeedback-linux.git'
@@ -165,7 +166,7 @@ def main(argv=None):
     }
     command_width = max(map(len, commands)) + 2
     parser = argparse.ArgumentParser(prog='defeedback-linux',
-        usage='%(prog)s [-h] [--debug] [COMMAND] [ARGS ...]',
+        usage='%(prog)s [-h] [--version] [--debug] [COMMAND] [ARGS ...]',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='Unofficial Linux integration for the Alpha Labs De-Feedback plugin.\n'
                     'Not affiliated with or endorsed by Alpha Labs.\n'
@@ -187,7 +188,12 @@ def main(argv=None):
                '  REAPER: https://www.reaper.fm/purchase.php\n'
                '  De-Feedback: https://www.alphalabsaudio.com/defeedback/')
     parser.add_argument('--debug', action='store_true', help='extra text diagnostics; never records audio')
+    parser.add_argument('--version', action='store_true', help='show the integration version and installed Git revision, when available')
     try:
+        if arguments and arguments[0] == '--version':
+            parser.parse_args(arguments)
+            print(describe_version(ROOT))
+            return 0
         if not arguments or (arguments[0].startswith('-') and arguments[0] not in ('-h', '--help')):
             return execute(dispatch('run', arguments))
         if arguments[0] in ('-h', '--help'):

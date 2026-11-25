@@ -16,6 +16,8 @@ import tempfile
 import threading
 import time
 
+from project_version import read_version
+
 MAX_BYTES = 2 * 1024 * 1024
 BACKUPS = 2
 KEEP_SESSIONS = 10
@@ -69,7 +71,8 @@ class Session:
         try:
             metadata = Path.home() / '.local/share/defeedback/installation.json'
             revision = json.loads(metadata.read_text()).get('revision') if metadata.exists() else None
-            self.logger.info('SYSTEM kernel=%s revision=%s', os.uname().release, revision or 'unknown')
+            self.logger.info('SYSTEM kernel=%s version=%s revision=%s', os.uname().release,
+                             read_version(), revision or 'unknown')
             prune_sessions(directory)
         except (OSError, ValueError) as error:
             self.logger.warning('Metadata/retention check failed: %s', error)

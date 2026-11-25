@@ -57,6 +57,10 @@ check() {
 
 printf 'Diagnostic report: %s\n' "$report"
 printf 'Collected at %s\n' "$(date +%Y-%m-%dT%H:%M:%S%z)" > "$report"
+integration_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+integration_cli="$integration_root/bin/defeedback-linux"
+[[ -f $integration_cli ]] || integration_cli="$integration_root/defeedback-linux"
+check 'integration version' python3 "$integration_cli" --version
 check 'OS release' cat /etc/os-release
 check 'kernel and architecture' uname -srm
 check 'CPU' lscpu

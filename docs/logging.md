@@ -38,6 +38,8 @@ Sessions rotate at **2 MiB with two backups** and retain the **10 newest session
 
 ## Debug a problem
 
+Include the output of `defeedback-linux --version` when reporting an issue. New sessions record the integration version alongside the kernel and installed revision; diagnostic reports include it too.
+
 Use a controlled test with additional context:
 
 ```bash

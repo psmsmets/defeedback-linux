@@ -21,8 +21,10 @@ from urllib.request import urlopen
 
 BUNDLE = Path(__file__).resolve().parent.parent
 RESOURCES = {
+    'VERSION': 'VERSION',
     'defeedback-linux': 'bin/defeedback-linux',
     'lib/cli.py': 'lib/cli.py',
+    'lib/project_version.py': 'lib/project_version.py',
     'lib/startup_config.py': 'lib/startup_config.py',
     'lib/session_log.py': 'lib/session_log.py',
     'lib/log_commands.py': 'lib/log_commands.py',
@@ -162,7 +164,8 @@ def install(runtime, installed, app, backup):
                 revision = result.stdout.strip()
         with tempfile.TemporaryDirectory(prefix='.metadata-', dir=app) as temporary:
             metadata = Path(temporary) / 'installation.json'
-            metadata.write_text(json.dumps({'revision': revision}) + '\n')
+            metadata.write_text(json.dumps({'version': (app / 'VERSION').read_text().strip(),
+                                            'revision': revision}) + '\n')
             atomic_copy(metadata, app / 'installation.json')
             changed.append('installation.json')
         link = Path.home() / '.local/bin/defeedback-linux'

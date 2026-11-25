@@ -37,9 +37,12 @@ For a new workstation, first run `bash setup-defeedback.sh` from the Linux bundl
 | `defeedback-linux logs --list` | List all available log sources |
 | `defeedback-linux logs --all --journal` | Read log tails and user service messages |
 | `defeedback-linux --debug` | Start REAPER with additional text diagnostics |
+| `defeedback-linux --version` | Show the integration version and installed Git revision, when available |
 | `defeedback-linux --help` | Show commands |
 
 `defeedback-linux license-gui` remains an alias for `defeedback-linux open-license-gui`.
+
+When reporting an issue, include `defeedback-linux --version` and the relevant logs. This version identifies the Linux integration, independently of REAPER, Wine, yabridge, and De-Feedback. Git-based installations also show the installed revision; release archives retain the version without requiring Git. Existing workstations need an integration update to gain this option.
 
 To activate the plugin, close REAPER and run `defeedback-linux open-license-gui`. Open the De-Feedback editor in VSTHost, select **Options → License Management**, and follow the regular De-Feedback / Alpha Labs activation steps for Windows. See [the activation walkthrough and successful activation screenshot](setup.md#license-management-in-vsthost).
 

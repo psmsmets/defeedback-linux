@@ -54,6 +54,7 @@ class Logging(unittest.TestCase):
         self.assertIn('stdout test', text)
         self.assertIn('stderr test', text)
         self.assertIn('PROCESS exit status=7', text)
+        self.assertIn('version=' + logs.read_version(), text)
         self.assertIn('SESSION end', text)
         self.assertIn('stdout test', console.getvalue())
 

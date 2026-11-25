@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -27,6 +28,20 @@ launcher = module('launcher', BUNDLE / 'lib/reaper-launch.py')
 
 
 class Commands(unittest.TestCase):
+    def test_version_from_source_without_starting_audio_or_creating_logs(self):
+        expected = 'defeedback-linux ' + (BUNDLE / 'VERSION').read_text().strip() + '\n'
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            environment = dict(os.environ, HOME=directory, XDG_STATE_HOME=str(home / 'state'))
+            for arguments in (['--version'], ['--debug', '--version']):
+                result = subprocess.run([sys.executable, str(BUNDLE / 'defeedback-linux'), *arguments],
+                                        cwd=directory, env=environment, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected)
+                self.assertEqual(result.stderr, '')
+            self.assertFalse((home / 'state').exists())
+            self.assertFalse((home / '.local/share/defeedback').exists())
+
     def test_manual_aes67_check_launches_managed_device_only_with_endpoints(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
@@ -119,6 +134,18 @@ class Commands(unittest.TestCase):
             desktop.write_text('[Desktop Entry]\nName=REAPER\nExec=reaper\n')
             with patch.object(updater.shutil, 'which', return_value=None):
                 updater.install(None, home / 'REAPER', app, backup)
+            metadata = json.loads((app / 'installation.json').read_text())
+            self.assertEqual(metadata['version'], (BUNDLE / 'VERSION').read_text().strip())
+            self.assertIsNone(metadata['revision'])
+            executable = home / '.local/bin/defeedback-linux'
+            for metadata_text, suffix in [((app / 'installation.json').read_text(), ''),
+                                          (json.dumps({'revision': 'abcdef1234567890'}), ' (revision abcdef123456)'),
+                                          ('invalid JSON', '')]:
+                (app / 'installation.json').write_text(metadata_text)
+                result = subprocess.run([str(executable), '--version'], cwd=directory,
+                                        text=True, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, 'defeedback-linux ' + metadata['version'] + suffix + '\n')
             self.assertFalse(old.is_symlink())
             self.assertIn('Name=De-Feedback Linux — unofficial integration', desktop.read_text())
             self.assertIn('Exec=reaper', desktop.read_text())
