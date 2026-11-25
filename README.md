@@ -1,7 +1,5 @@
 # Alpha Labs De-Feedback on Linux
 
----
-
 ## Disclaimer
 
 Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliated with or endorsed by Alpha Labs. REAPER and Alpha Labs De-Feedback are separately licensed products. This project includes neither license. Obtain and activate each product according to its vendor's terms.
@@ -9,8 +7,6 @@ Unofficial Linux integration for the Alpha Labs De-Feedback plugin. Not affiliat
 Products and licensing: [REAPER](https://www.reaper.fm/purchase.php) · [Alpha Labs De-Feedback](https://www.alphalabsaudio.com/defeedback/).
 
 The integration scripts are licensed under [MIT](LICENSE). Third-party software retains its own licenses. See [third-party software and redistribution](docs/installation.md#third-party-software-and-redistribution).
-
----
 
 ## About this project
 
